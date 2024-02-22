@@ -1,4 +1,4 @@
-![LDPL](images/header.png)
+
 
 <p align="center">
   <img src="https://github.com/Lartu/LDPL-24/blob/main/images/header.png">
