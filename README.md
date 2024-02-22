@@ -1,9 +1,16 @@
 ![LDPL](images/header.png)
 
+<p align="center">
+  <img src="https://github.com/Lartu/LDPL-24/blob/main/images/header.png">
+  <br><br>
+  <img src="https://img.shields.io/badge/stable_release-No!!-red.svg">
+  <img src="https://img.shields.io/badge/license-Apache_2.0-yellow">
+</p>
+
 The readme below is updated (for now!!) This is a fork of [LDPL](http://github.com/lartu/ldpl/) 1.1.2, from March 6,
 2019.
 
---
+## Old Readme
 
 [LDPL](http://ldpl.lartu.net/) is a programming language designed to be very easy to read and understand.
 Also as a joke, as its syntax is based on that from COBOL.
