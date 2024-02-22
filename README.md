@@ -7,8 +7,8 @@
   <img src="https://img.shields.io/badge/license-Apache_2.0-yellow">
 </p>
 
-The readme below is updated (for now!!) This is a fork of [LDPL](http://github.com/lartu/ldpl/) 1.1.2, from March 6,
-2019.
+The readme below is updated (for now!!) This is a fork of **[LDPL](http://github.com/lartu/ldpl/) 1.1.2**, from March 6, 2019.
+LDPL 1.1.2 is the last version to run as an interpreter on the NariVM. All subsequent versions transpile LDPL code to C++.
 
 ## Old Readme
 
