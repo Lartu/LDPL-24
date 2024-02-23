@@ -1,118 +1,131 @@
-body{
-    margin: 1em 70px;
+html {
+    border-left: 28px solid purple;
+}
+
+body {
+    margin: 1rem 1rem;
     color: black;
     background-color: #FAFAFA;
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    max-width: 800px;
 }
 
-a{
+a {
     color: #5555EE;
 }
 
-h1{
+h1 {
     color: navy;
     margin-bottom: 0.4em;
 }
 
-h2, h3{
+h2 {
+    background-color: purple;
+    color: white;
+    margin-left: -1rem;
+    padding: 5px 1rem;
+    padding-bottom: 3px;
+}
+
+h3 {
     color: maroon;
     text-transform: capitalize;
     /*margin-top: 1rem;*/
-	margin-top: 2rem;
-	border-bottom: 1px solid maroon;
+    margin-top: 2rem;
+    border-bottom: 1px solid maroon;
 }
 
-h4{
-	text-decoration: underline;
+h4 {
+    text-decoration: underline;
 }
 
-hr{
+hr {
     margin: 0px;
     margin-top: 1rem;
     margin-bottom: 1rem;
 }
 
-dt{
+dt {
     font-weight: 700;
 }
 
-dd{
+dd {
     margin-bottom: 0.8em;
 }
 
-.date{
-	font-weight: 300;
-	color:gray;
+.date {
+    font-weight: 300;
+    color: gray;
 }
 
-#footer{
+#footer {
     font-size: 10pt;
     color: grey;
 }
 
-.menu{
-	text-align: center;
-	display: inline;
-	vertical-align: middle;
-	margin-left: 1em;
-	margin-right: 1em;
+.menu {
+    text-align: center;
+    display: inline;
+    vertical-align: middle;
+    margin-left: 1em;
+    margin-right: 1em;
 }
 
-.menu img{
-	width: 70px;
-	vertical-align: middle;
+.menu img {
+    width: 70px;
+    vertical-align: middle;
 }
 
-.external{
+.external {
     background-position: center right;
     background-repeat: no-repeat;
 }
 
-.docdue{
-	color:black;
-	background-color: #FFDDDD;
-	display: inline-block;
-	text-transform: lowercase;
-	padding-left: 0.5em;
-	padding-right: 0.5em;
+.docdue {
+    color: black;
+    background-color: #FFDDDD;
+    display: inline-block;
+    text-transform: lowercase;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
     font-size: 0.8em;
 }
 
-.docpar{
-	color:black;
-	background-color: #efda86;
-	display: inline-block;
-	text-transform: lowercase;
-	padding-left: 0.5em;
-	padding-right: 0.5em;
+.docpar {
+    color: black;
+    background-color: #efda86;
+    display: inline-block;
+    text-transform: lowercase;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
     font-size: 0.8em;
 }
 
-img{
+img {
     max-width: 100%;
 }
 
-.code{
+.code {
     font-family: monospace;
     border-left: 2px solid grey;
     padding-left: 0.5em;
 }
-	
+
 @media only screen and (max-width: 1000px) {
-	.menu{
-		display: none;
-	}
+    .menu {
+        display: none;
+    }
 }
 
 @media only screen and (max-width: 500px) {
-    body{
+    body {
         margin: 0px;
         padding: 1em;
         padding-top: 1.4em;
         background: #FAFAFA url("https://lartu.net/pictures/ornament-h.gif") top left repeat-x;
     }
-    
-    h1{
-		text-align: center;
+
+    h1 {
+        text-align: center;
     }
 }
