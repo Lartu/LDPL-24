@@ -1,0 +1,118 @@
+body{
+    margin: 1em 70px;
+    color: black;
+    background-color: #FAFAFA;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+a{
+    color: #5555EE;
+}
+
+h1{
+    color: navy;
+    margin-bottom: 0.4em;
+}
+
+h2, h3{
+    color: maroon;
+    text-transform: capitalize;
+    /*margin-top: 1rem;*/
+	margin-top: 2rem;
+	border-bottom: 1px solid maroon;
+}
+
+h4{
+	text-decoration: underline;
+}
+
+hr{
+    margin: 0px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+dt{
+    font-weight: 700;
+}
+
+dd{
+    margin-bottom: 0.8em;
+}
+
+.date{
+	font-weight: 300;
+	color:gray;
+}
+
+#footer{
+    font-size: 10pt;
+    color: grey;
+}
+
+.menu{
+	text-align: center;
+	display: inline;
+	vertical-align: middle;
+	margin-left: 1em;
+	margin-right: 1em;
+}
+
+.menu img{
+	width: 70px;
+	vertical-align: middle;
+}
+
+.external{
+    background-position: center right;
+    background-repeat: no-repeat;
+}
+
+.docdue{
+	color:black;
+	background-color: #FFDDDD;
+	display: inline-block;
+	text-transform: lowercase;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+    font-size: 0.8em;
+}
+
+.docpar{
+	color:black;
+	background-color: #efda86;
+	display: inline-block;
+	text-transform: lowercase;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+    font-size: 0.8em;
+}
+
+img{
+    max-width: 100%;
+}
+
+.code{
+    font-family: monospace;
+    border-left: 2px solid grey;
+    padding-left: 0.5em;
+}
+	
+@media only screen and (max-width: 1000px) {
+	.menu{
+		display: none;
+	}
+}
+
+@media only screen and (max-width: 500px) {
+    body{
+        margin: 0px;
+        padding: 1em;
+        padding-top: 1.4em;
+        background: #FAFAFA url("https://lartu.net/pictures/ornament-h.gif") top left repeat-x;
+    }
+    
+    h1{
+		text-align: center;
+    }
+}

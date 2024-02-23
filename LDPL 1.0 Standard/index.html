@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<head>
+	<!-- Android chrome color -->
+	<meta name="theme-color" content="#000">
+	
+	<!-- Charset -->
+	<meta charset="UTF-8">
+	
+	<!-- Title and favicon -->
+	<title>
+		LDPL 19 Standard
+	</title>
+	<link rel="icon" href="
+	@koala constant url
+	/pictures/favicon_c.ico">
+	
+	<!-- Description -->
+	<meta name="description" content="Martín del Río's personal webpage. This is my personal server and repository of things I've worked on. Come on in!">
+	
+	<!-- Device Scaling -->
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+	
+	<!-- Fonts and Stylesheets -->
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>	
+
+	<body>
+		<h1>
+		LDPL 19 Standard
+		</h1>
+		
+		<center><img src="ldpl.png"></center>
+		
+		<h3>
+		Index
+		</h3>
+		
+		<ul>
+            <li>
+                <a href="#about">
+                    About This Document
+                </a>
+            </li>
+            <li>
+                <a href="#lang">
+                    The Language
+                </a>
+                <ul>
+                    <li>
+                        <a href="#sections">
+                            Sections
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#comments">
+                            Comments
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#extension">
+                            File Extensions
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#dt">
+                    Data Types
+                </a>
+                <ul>
+                    <li>
+                        <a href="#dt-number">
+                            NUMBER
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#dt-text">
+                            TEXT
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#dt-vector">
+                            VECTOR
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#ds">
+                    DATA Section
+                </a>
+            </li>
+            <li>
+                <a href="#ps">
+                    PROCEDURE Section
+                </a>
+            </li>
+			<li>
+                <a href="#statements">
+                    About Statements
+                </a>
+				<ul>
+                    <li>
+                        <a href="#varuse">
+                            Variable Use
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#vecuse">
+                            Vector Use
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#commands1">
+                    Statements: Control Flow
+                </a>
+				<ul>
+                    <li>
+                        <a href="#store">
+                            STORE
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#if">
+                            IF
+                        </a>
+                    </li>
+					<li>
+                        <a href="#while">
+                            WHILE
+                        </a>
+                    </li>
+					<li>
+                        <a href="#subprocedure">
+                            SUBPROCEDURE
+                        </a>
+                    </li>
+					<li>
+                        <a href="#callsub">
+                            CALL SUBPROCEDURE
+                        </a>
+                    </li>
+					<li>
+                        <a href="#return">
+                            RETURN
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#commands2">
+                    Statements: Arithmetic Operations
+                </a>
+				<ul>
+                    <li>
+                        <a href="#+">
+                            ADD
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#-">
+                            SUBTRACT
+                        </a>
+                    </li>
+					<li>
+                        <a href="#*">
+                            MULTIPLY
+                        </a>
+                    </li>
+					<li>
+                        <a href="#/">
+                            DIVIDE
+                        </a>
+                    </li>
+					<li>
+                        <a href="#%">
+                            MODULO
+                        </a>
+                    </li>
+					<li>
+                        <a href="#abs">
+                            ABS
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#commands3">
+                    Statements: Text Operations
+                </a>
+				<ul>
+                    <li>
+                        <a href="#join">
+                            JOIN
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#getchar">
+                            GET CHARACTER AT
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#commands4">
+                    Statements: Input / Output
+                </a>
+				<ul>
+                    <li>
+                        <a href="#display">
+                            DISPLAY
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#accept">
+                            ACCEPT
+                        </a>
+                    </li>
+					<li>
+                        <a href="#execute">
+                            EXECUTE
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#bnf">
+                    Language Grammar
+                </a>
+            </li>
+            <li>
+                <a href="#implementations">
+                    Known Implementations
+                </a>
+            </li>
+		</ul>
+		
+		<h3 id="about">
+		About this Document
+		</h3>
+		
+		<p>
+		The LDPL Commitee have compiled this document with the desire to teach and standarize the LDPL programming language. It should be considered a limiting boundary for any LDPL implementation, that should not include any extra commands or definitions nor lack any of the former. If it did, it should be marked accordingly with the names LDPL-ALT, Alternative LDPL or something similar that implies that it's not a standard implementation.
+		</p>
+		
+		<p>
+		This document is definitive and backwards compatible, and any future revisions that build upon it will only add features to the language, not remove nor change any functionality and, as such, any code written for a previous LDPL specification should continue to run as it did with the specification it was written for.
+		</p>
+		
+		<p>
+		Feedback, corrections and suggestions are welcome, both on the main LDPL repository or by e-mail to <i>mdelrio (at) dc.uba.ar</i>. New commitee members are also welcome.
+		</p>
+		
+		<h3 id="lang">
+		The Language
+		</h3>
+		
+		<p>
+		LDPL (<i>Lartu's Definitive Programming Language</i>) was designed from the beginning to be an excessively expressive programming language, one that can be read from top to bottom without pausing to ponder what symbols mean or what a sentence does. As such, it is mostly written in a series of statements that mimics plain English, with the desire that it can be understood by anybody.
+		</p>
+		
+		<p>
+        LDPL also aims to suppress unreadable code and redundancy by only having one way of doing anything. What a command does should never overlap with the purpose of another and, as such, every LDPL command does one and only one thing. Every line is a step further towards the completition of an algorithm, no more, no less.
+		</p>
+		
+		<h4>
+		Structure of a LDPL Source Code
+		</h4>
+		
+		<p id="sections">
+        LDPL was designed to be a rigidly structured programming language and, as such, variable declarations and the rest of the code procedure are separated in two diferent, mutually exclusive <b>sections</b> within a source file. Variable declarations should be placed within the <a href="#ds">DATA</a> section, while the rest of the code should be placed inside the <a href="#ps">PROCEDURE</a> section. Further subprocedures should be placed also within the PROCEDURE section, inside their own <a href="#commands1">SUB-PROCEDURE</a> subsection.
+		</p>
+		
+		<p>
+		Bearing this in mind, the basic skeleton of a LDPL source code will look like this:
+		</p>
+		
+		<div class="code" id="skeleton">
+		DATA:
+		<br>
+		<br>PROCEDURE:
+		<br>
+		<br>
+		</div>
+		
+		<p>
+		The DATA section can be obviated if no variables are declared.
+		</p>
+		
+		<p>
+		Every statement in LDPL has to be on its own line. Thus, statements are separated by line breaks and it's not possible to have two statements on the same line.
+		</p>
+		
+		<p id="comments">
+		<b>Comments</b> in LDPL are denoted with a hash symbol ('#') and can be placed both on their own line or at the end of a line that already contains a statement. Everything after the hash is considered to be part of the comment and, therefore, not executed nor compiled.
+		</p>
+		
+		<div class="code">
+		DATA: <span style="color: gray">#This is the DATA section</span>
+		<br>
+		<br>PROCEDURE:
+		<br>&nbsp;&nbsp;<span style="color: gray">#This is a comment within the PROCEDURE section!</span>
+		<br>
+		</div>
+		
+		<p id="extension">
+		The preferred <b>file extension</b> for LDPL source codes is '<b>.lsc</b>' (<i><b>L</b>DPL <b>S</b>ource <b>C</b>ode</i>). '<b>.ldpl</b>' should also be accepted if the later interfered with existing file extensions.
+		</p>
+		
+		<h3 id="dt">
+		Data Types
+		</h3>
+		
+		<p>
+		LDPL natively supports the <b>NUMBER</b> and <b>TEXT</b> data types. It also supports <b>VECTORS</b> of values of such types.
+		</p>
+		
+		<p id="dt-number">
+		The <b>NUMBER</b> data type, as its name suggests, depicts numeric values. It should be represented internally as a <b>binary64</b> double-precision floating-point format number as defined by the <b>IEEE 754</b>.
+		</p>
+		
+		<p>
+		Both variables and numeric constants can be members of the NUMBER type.
+		</p>
+		
+		<p id="dt-text">
+		The <b>TEXT</b> data type, as its name suggests, represents alphanumeric strings. In the interest of supporting as many locales as possible, LDPL should be <b>utf-8</b> encoded to be compatible with Unicode. A TEXT maximum length is explicitly not defined and it should be limited only by the amount of available memory on the system.
+		</p>
+		
+		<p>
+		Both variables and string constants can be members of the TEXT type.
+		</p>
+		
+		<p id="dt-vector">
+		The <b>VECTOR</b> data type is not a type itself but a collection of NUMBER or TEXT variables. This implies that only variables can be members of the VECTOR type, as collections of constants (and thus, constant VECTORs) are not present in the language.
+		</p>
+		
+		<p>
+		VECTORs superficially resemble arrays in other programming languages but with fundamental differences. In LDPL, there's no need to specify the size of a VECTOR before you start to use it. Additionally, any number or string in LDPL may be used as an array index, not just consecutive integers.
+		</p>
+		
+		<p>
+		VECTORs, as collections of NUMBER or TEXT variables, can only have one defined type at any given time: TEXT <i>or</i> NUMBER. A single VECTOR is not capable of storing both numeric and alphanumeric values.
+		</p>
+		
+		<h3 id="ds">
+		DATA Section
+		</h3>
+		
+		<p>
+		As stated <a href="#sections">here</a>, LDPL programs are divided in two sections, one of them being the <b>DATA</b> section. The DATA section is where variables are declared. In no other part of a LDPL source can variables be declared. If no variables are declared, the DATA section can be obviated.
+		</p>
+		
+		<p>
+		All variables in LDPL are global (LDPL has no concept of scope) and have a defined <a href="#dt">data type</a>.
+		</p>
+		
+		<p>
+		The DATA section is defined and preceded by the <code>DATA:</code> keyword, as shown in <a href="#skeleton">this example</a>. On every line within the DATA section (that is, on every line after the <code>DATA:</code> keyword and before the <a href="#ps"><code>PROCEDURE:</code></a> keyword) one and only one variable can be declared. The syntax for declaring a variable in LDPL is 
+		</p>
+		<div class="code">
+            <span style="color: magenta">variable name</span> IS <span style="color: magenta">data type</span></code>
+		</div>
+		
+		<p>
+		<b>Variable names</b> can contain any character except for spaces and colons (':').
+		</p>
+		
+		<p>
+		Available data types are <code>NUMBER</code>, <code>TEXT</code>, <code>NUMBER VECTOR</code> and <code>TEXT VECTOR</code>.
+		</p>
+		
+		<p>
+		A DATA section cannot contain anything but variable declarations, comments and empty lines. Following the skeleton shown <a href="skeleton">here</a>, the example could be completed further like this:
+		</p>
+		
+		<div class="code">
+		DATA: <span style="color: gray">#This is the DATA section</span>
+		<br>&nbsp;&nbsp;myNumber IS NUMBER
+		<br>&nbsp;&nbsp;<span style="color: gray">#Next I'm going to declare a text vector</span>
+		<br>&nbsp;&nbsp;niceTextVector IS TEXT VECTOR
+		<br>
+		<br>PROCEDURE:
+		<br>&nbsp;&nbsp;<span style="color: gray">#This is a comment within the PROCEDURE section!</span>
+		<br>
+		</div>
+		
+		<h3 id="ps">
+		PROCEDURE Section
+		</h3>
+		
+		<p>
+		As stated <a href="#sections">here</a>, LDPL programs are divided in two sections, one of them being the <a href="#ds">DATA</a> section, the other being the <b>PROCEDURE</b> section. The PROCEDURE section is where all the code of a LDPL program that is not a variable declaration is written. A LDPL program <b>must</b> contain a PROCEDURE section, even if it's empty. Compilation will fail otherwise.
+		</p>
+		
+		<p>
+		Within the PROCEDURE section, as said <a href="skeleton">here</a>, every line can contain either a comment, a statement, a statement and a comment or be empty. No two statements can be written on the same line.
+		</p>
+		
+		<div class="code">
+		PROCEDURE:
+		<br>&nbsp;&nbsp;<span style="color: gray">#A comment</span>
+		<br>&nbsp;&nbsp;STORE 5 IN myVariable
+		<br>&nbsp;&nbsp;STORE 6 IN myOtherVariable <span style="color: gray">#A statement and a comment</span>
+		</div>
+		
+		<p>
+		Available statements will be explained further in the following sections of this document.
+		</p>
+		
+		<p>
+		Code within the PROCEDURE section is executed from top to bottom, skipping <a href="commands1">SUB-PROCEDURE</a> sections, unless explicitly called.
+		</p>
+		
+		<h3 id="statements">
+		About Statements
+		</h3>
+		
+		<p>
+		LDPL is not a case sensitive language. Variables called <code>myVar</code> and <code>MYVAR</code> are considered to be the same variable, the same with subprocedure names and statements of any kind.
+		</p>
+		
+		<h4 id="varuse">Usage of Variables</h4>
+		
+		<p>
+		In the following sections you will see excerpts of code like this one:
+		</p>
+		
+		<div class="code">
+            STORE <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span></code>
+		</div>
+		
+		<p>
+		Notice the parts in <span style="color: magenta">magenta</span>. Parts of procedures colored like that mean that they should be replaced by whatever they say in that color. In the example above, the first replazable part can be substituted with the name of a variable of NUMBER type or by a NUMBER constant.
+		</p>
+		
+		<p>
+		Available replacement values are:
+		<ul>
+			<li><code style="color: magenta">NUMBER</code>: A constant of type NUMBER.</li>
+			<li><code style="color: magenta">TEXT</code>: A constant of type TEXT.</li>
+			<li><code style="color: magenta">NUMBER-VAR</code>: A variable of type NUMBER.</li>
+			<li><code style="color: magenta">TEXT-VAR</code>: A variable of type TEXT.</li>
+			<li><code style="color: magenta">SUB-NAME</code>: A name of a subprocedure.</li>
+		</ul>
+		</p>
+		
+		<h4 id="vecuse">Usage of Vectors</h4>
+		
+		<p>
+		Vectors in LDPL aren't more than a collection of variables. When you declare a vector, you declare a structure that lets you store something of its type on any subindex of the variable. For example, say you declare the vector <code>myVector</code>:
+		</p>
+		
+		<div class="code">
+            DATA:
+			<br>&nbsp;myVector IS NUMBER VECTOR
+		</div>
+		
+		<p>
+		Then you can use <code>myVector</code> as a multivariable with various indexes where you can store NUMBERs.
+		</p>
+		
+		<div class="code">
+            DATA:
+			<br>&nbsp;myVector IS NUMBER VECTOR
+			<br>PROCEDURE:
+			<br>&nbsp;STORE 5 IN myVector:1 <span style="color: gray">#Stores 5 in the subindex 1 of myVector</span>
+			<br>&nbsp;STORE -10.2 IN myVector:5 <span style="color: gray">#Stores -10.2 in the subindex 5 of myVector</span>
+		</div>
+		
+		<p>
+		Vector subindexes can't just be constant NUMBERs, though. They can also be NUMBER variables, TEXT and TEXT variables, or even subindexes of other arrays. For example:
+		</p>
+		
+		<div class="code">
+            DATA:
+			<br>&nbsp;myVector IS NUMBER VECTOR
+			<br>&nbsp;myOtherVector IS NUMBER VECTOR
+			<br>&nbsp;myVar IS NUMBER
+			<br>
+			<br>PROCEDURE:
+			<br>&nbsp;STORE 17 IN myVar
+			<br>&nbsp;STORE 1 IN myVector:"hello" <span style="color: gray">#Stores 1 in the subindex "hello" of myVector</span>
+			<br>&nbsp;STORE 7 IN myVector:myVar <span style="color: gray">#Stores 7 in the position of index value of myVar</span>
+			<br>&nbsp;STORE 3 IN myVector:myOtherVector:4
+			<br>&nbsp;<span style="color: gray">#Stores 7 in the position of index value of myVar of myOtherVector</span>
+		</div>
+		
+		<p>
+			Plase note that as a VECTOR is a collection of variables, a single index of a VECTOR is a variable in itself. This means that a VECTOR with a subindex can be used in any position where you could use a variable of the same type of the vector.
+		</p>
+		
+		<h3 id="commands1">
+		Statements: Control Flow
+		</h3>
+		
+		<h4 id="store">
+			STORE
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					STORE <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span></code>
+				</div>
+				or
+				<div class="code">
+					STORE <span style="color: magenta">TEXT-VAR or TEXT</span> IN <span style="color: magenta">TEXT-VAR</span></code>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> assigns a value to a variable.
+			</li>
+		</ul>
+		
+		<h4 id="if">
+			IF
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					IF <span style="color: magenta">NUMBER-VAR or NUMBER</span> IS <span style="color: magenta">REL-OP-NUM</span> <span style="color: magenta">NUMBER-VAR or NUMBER</span> THEN
+					<br>&nbsp;<span style="color: gray">#Code goes here (positive branch)</span>
+					<br>ELSE
+					<br>&nbsp;<span style="color: gray">#Code goes here (negative branch)</span>
+					<br>END-IF
+				</div>
+				or
+				<div class="code">
+					IF <span style="color: magenta">TEXT-VAR or TEXT</span> IS <span style="color: magenta">REL-OP-TEXT</span> <span style="color: magenta">TEXT-VAR or TEXT</span> THEN
+					<br>&nbsp;<span style="color: gray">#Code goes here (positive branch)</span>
+					<br>ELSE
+					<br>&nbsp;<span style="color: gray">#Code goes here (negative branch)</span>
+					<br>END-IF
+				</div>
+				or
+				<div class="code">
+					IF <span style="color: magenta">NUMBER-VAR or NUMBER</span> IS <span style="color: magenta">REL-OP-NUM</span> <span style="color: magenta">NUMBER-VAR or NUMBER</span> THEN
+					<br>&nbsp;<span style="color: gray">#Code goes here (positive branch)</span>
+					<br>END-IF
+				</div>
+				or
+				<div class="code">
+					IF <span style="color: magenta">TEXT-VAR or TEXT</span> IS <span style="color: magenta">REL-OP-TEXT</span> <span style="color: magenta">TEXT-VAR or TEXT</span> THEN
+					<br>&nbsp;<span style="color: gray">#Code goes here (positive branch)</span>
+					<br>END-IF
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Possible values of <code style="color: magenta">REL-OP-NUM</code> (number relational operator):</b>
+				<ul>
+					<li><code>EQUAL TO</code></li>
+					<li><code>NOT EQUAL TO</code></li>
+					<li><code>GREATER THAN</code></li>
+					<li><code>LESS THAN</code></li>
+					<li><code>GREATER THAN OR EQUAL TO</code></li>
+					<li><code>LESS THAN OR EQUAL TO</code></li>
+				</ul>
+			</li>
+			
+			<li>
+				<b>Possible values of <code style="color: magenta">REL-OP-TEXT</code> (text relational operator):</b>
+				<ul>
+					<li><code>EQUAL TO</code></li>
+					<li><code>NOT EQUAL TO</code></li>
+				</ul>
+			</li>
+			
+			<li>
+				<b>Description:</b> evaluates if the condition given by the relational operator between the first and second values is positive. If it is, the code in the positive branch is executed. If it is not, the code in the negative branch is executed (if available). Execution then continues normally.
+			</li>
+		</ul>
+		
+		<h4 id="while">
+			WHILE
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					WHILE <span style="color: magenta">NUMBER-VAR or NUMBER</span> IS <span style="color: magenta">REL-OP-NUM</span> <span style="color: magenta">NUMBER-VAR or NUMBER</span> DO
+					<br>&nbsp;<span style="color: gray">#Code goes here</span>
+					<br>REPEAT
+				</div>
+				or
+				<div class="code">
+					WHILE <span style="color: magenta">TEXT-VAR or TEXT</span> IS <span style="color: magenta">REL-OP-TEXT</span> <span style="color: magenta">TEXT-VAR or TEXT</span> THEN
+					<br>&nbsp;<span style="color: gray">#Code goes here</span>
+					<br>REPEAT
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Possible values of <code style="color: magenta">REL-OP-NUM</code> (number relational operator):</b>
+				<ul>
+					<li><code>EQUAL TO</code></li>
+					<li><code>NOT EQUAL TO</code></li>
+					<li><code>GREATER THAN</code></li>
+					<li><code>LESS THAN</code></li>
+					<li><code>GREATER THAN OR EQUAL TO</code></li>
+					<li><code>LESS THAN OR EQUAL TO</code></li>
+				</ul>
+			</li>
+			
+			<li>
+				<b>Possible values of <code style="color: magenta">REL-OP-TEXT</code> (text relational operator):</b>
+				<ul>
+					<li><code>EQUAL TO</code></li>
+					<li><code>NOT EQUAL TO</code></li>
+				</ul>
+			</li>
+			
+			<li>
+				<b>Description:</b> evaluates if the condition given by the relational operator between the first and second values is positive. While it is, the code between the <code>WHILE</code> and <code>REPEAT</code> statements is repeatedly ran.
+			</li>
+		</ul>
+		
+		<h4 id="subprocedure">
+			SUB-PROCEDURE
+		</h4>
+		
+		<ul>
+			<li>
+				<b>Syntax:</b>
+				<p>
+					<div class="code">
+						SUB-PROCEDURE <span style="color: magenta">procedure name</span>
+						<br>&nbsp;<span style="color: gray">#Code goes here</span>
+						<br>RETURN
+					</div>
+				</p>
+			</li>
+		
+			<li>
+				<p>
+					<b>Description:</b> A SUB-PROCEDURE is a piece of code that can be called and executed from other parts of the script. SUB-PROCEDURE subsections must be declared within the PROCEDURE section of the code and end with at least one RETURN keyword. Bear in mind that you can't define a SUB-PROCEDURE within a SUB-PROCEDURE.
+				</p>
+			</li>
+		</ul>
+		
+		<h4 id="callsub">
+			CALL SUB-PROCEDURE
+		</h4>
+		
+		<ul>
+			<li>
+				<b>Syntax:</b>
+				<p>
+					<div class="code">
+						CALL SUB-PROCEDURE <span style="color: magenta">procedure name</span>
+					</div>
+				</p>
+			</li>
+		
+			<li>
+				<p>
+					<b>Description:</b> Executes a SUB-PROCEDURE. Once the SUB-PROCEDURE returns, the execution continues from the line following the <code>CALL SUB-PROCEDURE</code>.
+				</p>
+			</li>
+		</ul>
+		
+		<h4 id="return">
+			RETURN
+		</h4>
+		
+		<ul>
+			<li>
+				<b>Syntax:</b>
+				<p>
+					<div class="code">
+						RETURN
+					</div>
+				</p>
+			</li>
+		
+			<li>
+				<p>
+					<b>Description:</b> Returns from a SUBPROCEDURE. Will give a compiler error if used outside one.
+				</p>
+			</li>
+		</ul>
+		
+		<h3 id="commands2">
+		Statements: Arithmetic Operations
+		</h3>
+		
+		<h4 id="+">
+			ADD
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					ADD <span style="color: magenta">NUMBER-VAR or NUMBER</span> AND <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> adds two NUMBER values and stores the result in a NUMBER variable.
+			</li>
+		</ul>
+		
+		<h4 id="-">
+			SUBTRACT
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					SUBTRACT <span style="color: magenta">NUMBER-VAR or NUMBER</span> FROM <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> subtracts two NUMBER values and stores the result in a NUMBER variable.
+			</li>
+		</ul>
+		
+		<h4 id="*">
+			MULTIPLY
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					MULTIPLY <span style="color: magenta">NUMBER-VAR or NUMBER</span> BY <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> multiplies two NUMBER values and stores the result in a NUMBER variable.
+			</li>
+		</ul>
+		
+		<h4 id="/">
+			DIVIDE
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					DIVIDE <span style="color: magenta">NUMBER-VAR or NUMBER</span> BY <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> divides two NUMBER values and stores the result in a NUMBER variable.
+			</li>
+		</ul>
+		
+		<h4 id="%">
+			MODULO
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					MODULO <span style="color: magenta">NUMBER-VAR or NUMBER</span> BY <span style="color: magenta">NUMBER-VAR or NUMBER</span> IN <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> calculates the remainder of the modulo operation between two NUMBER values and stores the result in a NUMBER variable.
+			</li>
+		</ul>
+		
+		<h4 id="abs">
+			ABS
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					ABS <span style="color: magenta">NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> calculates the absolute value of a NUMBER variable and stores it in that same variable.
+			</li>
+		</ul>
+		
+		<h3 id="commands3">
+		Statements: Text Operations
+		</h3>
+		
+		<h4 id="join">
+			JOIN
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					JOIN <span style="color: magenta">NUMBER-VAR or NUMBER or TEXT-VAR or TEXT</span> AND <span style="color: magenta">NUMBER-VAR or NUMBER or TEXT-VAR or TEXT</span> IN <span style="color: magenta">TEXT-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> concatenates two values and stores them in a TEXT variable. If any value is a number, it is converted to a string before concatenation.
+			</li>
+		</ul>
+		
+		<h4 id="getchar">
+			GET CHARACTER AT
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					GET CHARACTER AT <span style="color: magenta">NUMBER-VAR or NUMBER</span> FROM <span style="color: magenta">TEXT-VAR or TEXT</span> IN <span style="color: magenta">TEXT-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> gets the character at the position indicated by the NUMBER value from the TEXT value and stores it in a TEXT variable.
+			</li>
+		</ul>
+		
+		<h3 id="commands4">
+		Statements: Input / Output
+		</h3>
+		
+		<h4 id="display">
+			DISPLAY
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					DISPLAY <span style="color: magenta">multiple NUMBER, TEXT, TEXT-VAR, NUMBER-VAR or CRLF</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> outputs the values passed to the output stream. <code>CRLF</code> means line break.
+			</li>
+			
+			<li><b>Example:</b>
+				<p>
+				<div class="code">
+					DISPLAY "Hello World! " myVariable CRLF
+				</div>
+				</p>
+			</li>
+		</ul>
+		
+		<h4 id="accept">
+			ACCEPT
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					ACCEPT <span style="color: magenta">TEXT-VAR or NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> the ACCEPT command is used to gather input from the user. If a TEXT variable is specified, anything the user enters before pressing the 'return' key will be accepted. If a NUMBER variable is specified, the user must enter a number (if any non-numeric key is entered, the error message "Redo from start" will be output and the ACCEPT command rerun).
+			</li>
+		</ul>
+		
+		<h4 id="execute">
+			EXECUTE
+		</h4>
+		
+		<ul>
+			<li><b>Syntax:</b>
+				<p>
+				<div class="code">
+					EXECUTE <span style="color: magenta">multiple NUMBER, TEXT, TEXT-VAR or NUMBER-VAR</span>
+				</div>
+				</p>
+			</li>
+			
+			<li>
+				<b>Description:</b> concatenates all the passed values as a single command and executes the specified command, dumping any resulting text to the output stream.
+			</li>
+			
+			<li><b>Example:</b>
+				<p>
+				<div class="code">
+					EXECUTE "echo " myVariable " >> myFile"
+				</div>
+				</p>
+			</li>
+		</ul>
+		
+		<h3 id="bnf">
+		Language Grammar
+		</h3>
+		
+		<p>
+		The grammar is listed below in <a href="https://en.wikipedia.org/wiki/Backus-Naur_form" class="external">Backus-Naur form</a>. In the listing, an asterisk ("*") denotes zero or more of the object to its left; parentheses group objects; and an epsilon ("ε") signifies the empty set. As is common in computer language grammar notation, the vertical bar ("|") distinguishes alternatives, as does their being listed on separate lines. The symbol "CRLF" denotes a carriage return (usually generated by a keyboard's "Enter" key).
+		</p>
+		
+		<div class="code">
+    <span style="color: #12ba4a"># DATA TYPES</span>
+    <br>digit ::= 1 | 2 | ... | 9 | 0
+    <br>letter ::= A | B | C | ... | a | b | c | ... | á | ñ | あ | ... | 仮 | ... | ر | ... 
+    <br>procedure-name ::= letter letter*
+    <br>string ::= " letter* "
+    <br>number ::= (ε | - ) digit digit* (ε | (. digit digit*))
+    <br>
+    <br><span style="color: #12ba4a"># VARIABLE DEFINITIONS</span>
+    <br>num-var-name ::= letter letter*
+    <br>str-var-name ::= letter letter*
+    <br>var ::= num-var | str-var
+    <br>num-var-definition ::= num-var-name IS NUMBER (VECTOR | ε)
+    <br>str-var-definition ::= str-var-name IS TEXT (VECTOR | ε)
+	<br>num-var ::= num-var-name (: (number | num-var | string | str-var))*
+	<br>str-var ::= str-var-name (: (number | num-var | string | str-var))*
+    <br>var-definition ::= num-var-definition | str-var-definition
+    <br>
+    <br><span style="color: #12ba4a"># STATEMENTS</span>
+    <br>block ::= (statement \n)*
+    <br>statement ::= display | accept | join | store | while | if | addition | subtraction | multiplication | division | modulo | abs | subroutine-call | get-char | sys-exec
+    <br>display ::= DISPLAY (var | string | number | CRLF) (var | string | number | CRLF)*
+    <br>accept ::= ACCEPT var
+    <br>join ::= JOIN (var | string | number) AND (var | string | number) INTO str-var
+    <br>str-store ::= STORE (str-var | string) IN str-var
+    <br>num-store ::= STORE (num-var | number) IN num-var
+    <br>store ::= str-store | num-store
+    <br>num-while ::= WHILE (num-var | number) (relop1 | relop2) (num-var | number) DO block REPEAT
+    <br>str-while ::= WHILE (str-var | string) relop1 (str-var | string) DO block REPEAT
+    <br>while ::= num-while | str-while
+    <br>num-if ::= IF (num-var | number) (relop1 | relop2) (num-var | number) THEN block ((ELSE block) | ε) END-IF
+    <br>str-if ::= IF (str-var | string) relop1 (str-var | string) THEN block ((ELSE block) | ε)  END-IF
+    <br>if ::= num-if | str-if
+    <br>addition ::= ADD (num-var | number) AND (num-var | number) IN (num-var)
+    <br>subtraction ::= SUBTRACT (num-var | number) FROM (num-var | number) IN (num-var)
+    <br>multiplication ::= MULTIPLY (num-var | number) BY (num-var | number) IN (num-var)
+    <br>division ::= DIVIDE (num-var | number) BY (num-var | number) IN (num-var)
+    <br>modulo ::= MODULO (num-var | number) BY (num-var | number) IN (num-var)
+	<br>abs ::= ABS num-var
+    <br>subroutine-call ::= CALL SUB-PROCEDURE procedure-name
+    <br>get-char ::= GET CHARACTER AT (num-var | number) FROM (string | str-var) IN str-var
+	<br>sys-exec ::= EXECUTE (string | str-var)
+    <br>
+    <br><span style="color: #12ba4a"># RELATIONAL OPERATORS</span>
+    <br>relop1 ::= (IS EQUAL TO) | (IS NOT EQUAL TO)
+    <br>relop2 ::= (IS GREATER THAN) | (IS LESS THAN) | (IS GREATER THAN OR EQUAL TO) | (IS LESS THAN OR EQUAL TO)
+    <br>
+    <br><span style="color: #12ba4a"># CODE SECTIONS</span>
+    <br>data-section ::= DATA: \n (var-definition \n)*
+    <br>procedure-section ::= PROCEDURE: block
+    <br>sub-procedure-section ::= SUB-PROCEDURE procedure-name: block RETURN
+    <br>
+    <br><span style="color: #12ba4a"># VALID CODE</span>
+    <br>valid-code ::= (data-section | ε) procedure-section sub-procedure-section*
+</div>
+
+<hr>
+
+<div>
+<p>
+<small>
+LDPL 19 Standard written by Martín del Río (www.lartu.net), (c) 2019, released under the GNU General Public License 3.0.
+</small>
+</p>
+</div>
+	</body>
+</html>
