@@ -2,5 +2,126 @@
 # by Martin del Rio
 # http://ldpl.lartu.net/
 
-PROCEDURE:
-display "Hello World!" crlf
+display "-= LDPL 24 Test =-" CRLF
+
+number_1 is number
+number_2 is number
+number_3 is number
+my_text is text
+
+# ---------
+
+display CRLF "Number STORE tests:" CRLF
+
+store 50 in number_1
+store 30 in number_2
+store number_2 in number_3
+
+display 50 " = " number_1 crlf
+display 30 " = " number_2 crlf
+display number_2 " = " number_3 crlf
+
+# ---------
+
+display CRLF "Number ADD tests:" CRLF
+
+store 50 in number_1
+store 30 in number_2
+
+add number_2 and number_1 in number_3
+display number_1 " + " number_2 " = " number_3 crlf
+
+add 30 and 50 in number_3
+display 50 " + " 30 " = " number_3 crlf
+
+add 30 and number_1 in number_3
+display number_1 " + " 30 " = " number_3 crlf
+
+add number_2 and 50 in number_3
+display 50 " + " number_2 " = " number_3 crlf
+
+# ---------
+
+display CRLF "Number SUBTRACT tests:" CRLF
+
+store 50 in number_1
+store 30 in number_2
+
+subtract number_2 from number_1 in number_3
+display number_1 " - " number_2 " = " number_3 crlf
+
+subtract 30 from 50 in number_3
+display 50 " - " 30 " = " number_3 crlf
+
+subtract 30 from number_1 in number_3
+display number_1 " - " 30 " = " number_3 crlf
+
+subtract number_2 from 50 in number_3
+display 50 " - " number_2 " = " number_3 crlf
+
+# ---------
+
+display CRLF "Number DIVIDE tests:" CRLF
+
+store 50 in number_1
+store 2 in number_2
+
+divide number_1 by number_2 in number_3
+display number_1 " / " number_2 " = " number_3 crlf
+
+divide 50 by 2 in number_3
+display 50 " / " 2 " = " number_3 crlf
+
+divide number_1 by 2 in number_3
+display number_1 " / " 2 " = " number_3 crlf
+
+divide 50 by number_2 in number_3
+display 50 " / " number_2 " = " number_3 crlf
+
+# ---------
+
+display CRLF "Number MULTIPLY tests:" CRLF
+
+store 50 in number_1
+store 2 in number_2
+
+MULTIPLY number_1 by number_2 in number_3
+display number_1 " * " number_2 " = " number_3 crlf
+
+MULTIPLY 50 by 2 in number_3
+display 50 " * " 2 " = " number_3 crlf
+
+MULTIPLY number_1 by 2 in number_3
+display number_1 " * " 2 " = " number_3 crlf
+
+MULTIPLY 50 by number_2 in number_3
+display 50 " * " number_2 " = " number_3 crlf
+
+# ---------
+
+display CRLF "Number MODULO tests:" CRLF
+
+store 50 in number_1
+store 20 in number_2
+
+MODULO number_1 by number_2 in number_3
+display number_1 " % " number_2 " = " number_3 crlf
+
+MODULO 50 by 20 in number_3
+display 50 " % " 20 " = " number_3 crlf
+
+MODULO number_1 by 20 in number_3
+display number_1 " % " 20 " = " number_3 crlf
+
+MODULO 50 by number_2 in number_3
+display 50 " % " number_2 " = " number_3 crlf
+
+counter is number
+display ":)" crlf
+
+LABEL test
+
+add 1 and counter in counter
+display "Counter: " counter crlf
+
+GO TO test

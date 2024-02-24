@@ -1,3 +1,9 @@
+//       _    ___  ___ _    ___ _ _
+//     | |  |   \| _ \ |  |_  ) | |
+//    | |__| |) |  _/ |__ / /|_  _|
+//   |____|___/|_| |____/___| |_|
+// -= LDPL's Great Leap Backwards =-
+
 // TODO:
 // Documentar stdlib
 // Hacer que si recibe - por parémtro ejecute el código que recibe por stdin
@@ -6,9 +12,8 @@
 // Documentar secuencias de escape
 
 #include "ldpl.h"
-
-// Show internal representation
-bool show_ir = false;
+ldpl_compilation_state state;  // Compiler state (holds variables, sections, functions, etc)
+LDPL_Execution_State ex_state; // Execution State
 
 int main(int argc, const char *argv[])
 {
@@ -24,15 +29,13 @@ int main(int argc, const char *argv[])
         cout << "Usage: ldpl [options] file [arguments]" << endl;
         cout << "Options:" << endl;
         cout << "  -h --help                Display this information" << endl;
-        cout << "  -r                       Display internal representation of the program" << endl;
         cout << "  -i=<file>                Include file in current compilation" << endl;
         cout << "  -v --version             Display LDPL version information" << endl;
         return 0;
     }
 
-    compiler_state state; // Compiler state (holds variables, sections, functions, etc)
-    state.variables["ARGC"] = 1;
-    state.variables["ARGV"] = 4;
+    // state.variables["ARGC"] = 1;
+    // state.variables["ARGV"] = 4;
     bool arguments_are_arguments = false;
     int argument_push_count = 0;
     vector<string> files_to_compile;
@@ -49,10 +52,6 @@ int main(int argc, const char *argv[])
                     files_to_compile.push_back(arg);
                     arguments_are_arguments = true;
                 }
-                else if (arg == "-r")
-                {
-                    show_ir = true;
-                }
                 else if (arg.substr(0, 3) == "-i=")
                 {
                     files_to_compile.push_back(arg.substr(3));
@@ -60,15 +59,16 @@ int main(int argc, const char *argv[])
             }
             else
             {
-                state.add_code("\"" + arg + "\"");
-                state.add_code("TOAUX:ARGV:" + to_string(argument_push_count));
+                // TODO CL Arguments
+                // state.add_code("\"" + arg + "\"");
+                // state.add_code("TOAUX:ARGV:" + to_string(argument_push_count));
                 ++argument_push_count;
             }
         }
     }
 
-    state.add_code(to_string(argument_push_count));
-    state.add_code("TOAUX:ARGC");
+    // state.add_code(to_string(argument_push_count));
+    // state.add_code("TOAUX:ARGC");
 
     // Fail if file was not passed
     if (files_to_compile.size() == 0)
@@ -81,12 +81,11 @@ int main(int argc, const char *argv[])
         if (filename[0] == '-')
             continue;
         // Reset state section for this file
-        state.section_state = 0;
         state.current_file = filename;
         load_and_compile(filename, state);
     }
     // Run the compiled code
-    nvm(state.output_code);
+    ex_state.execute();
 }
 
 void displayVersionInfo()
@@ -105,11 +104,9 @@ void displayVersionInfo()
          << endl
          << " Complete documentation for LDPL should be found on this system"
          << endl
-         << " using '\033[33;1mman ldpl\033[0m'. If you have access to the "
-            "internet, the"
+         << " using 'man ldpl'. If you have access to the internet, the"
          << endl
-         << " documentation can also be found online at "
-            "\033[36;1mdocs.ldpl-lang.org\033[0m."
+         << " documentation can also be found online at docs.ldpl-lang.org."
          << endl
          << endl
          << " LDPL may be copied only under the terms of the Apache License"
@@ -119,7 +116,7 @@ void displayVersionInfo()
          << endl;
 }
 
-void load_and_compile(string &filename, compiler_state &state)
+void load_and_compile(string &filename, ldpl_compilation_state &state)
 {
     // Load file
     ifstream file(filename);
@@ -150,16 +147,25 @@ void replace_whitespace(string &code)
 }
 
 // Shows error message and exits
-void error(const string &msg)
+void error(const string &msg, const string &file_name, int line_number)
 {
-    cerr << "\033[1;31mLDPL Error: ";
-    cerr << msg;
-    cerr << "\033[0m" << endl;
+    cerr << "LDPL Error!" << endl;
+    cerr << msg << endl;
+    if (file_name != "")
+    {
+        cerr << "- In file: " << file_name;
+        cerr << endl;
+    }
+    if (line_number >= 0)
+    {
+        cerr << "- Line number: " << line_number;
+        cerr << endl;
+    }
     exit(1);
 }
 
 // Compilation process
-void compile(vector<string> &lines, compiler_state &state)
+void compile(vector<string> &lines, ldpl_compilation_state &state)
 {
     // For each line in the source code
     for (unsigned int line_num = 0; line_num < lines.size(); ++line_num)
@@ -174,13 +180,6 @@ void compile(vector<string> &lines, compiler_state &state)
             continue;
         // TODO: pasar tokens que no sean strings a uppercase
         compile_line(tokens, line_num, state);
-    }
-    if (show_ir)
-    {
-        cout << "\033[35;1mLDPL - Showing internal representation code:\033[0m" << endl;
-        for (string line : state.output_code)
-            cout << line << endl;
-        exit(0);
     }
     // TODO: si llega acá y hay ifs sin cerrar o procedures sin cerrar, te comés puteada
 }
@@ -236,10 +235,10 @@ void tokenize(string &line, unsigned int line_num, vector<string> &tokens, strin
                 else if (next_letter == '0')
                     current_token += '\0';
                 else
-                    error("unknown escape sequence (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
+                    error("unknown escape sequence (" + current_file + ", line " + to_string(line_num) + ")");
             }
             else
-                error("\\ found alone (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
+                error("\\ found alone (" + current_file + ", line " + to_string(line_num) + ")");
         }
         else if (letter == '#') // Comment character
         {
@@ -259,7 +258,7 @@ void tokenize(string &line, unsigned int line_num, vector<string> &tokens, strin
         if (i == line.size() - 1 && letter != ' ')
         {
             if (in_string)
-                error("Unterminated string (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
+                error("Unterminated string (" + current_file + ", line " + to_string(line_num) + ")");
             if (current_token.size() > 0)
                 tokens.push_back(current_token);
         }
@@ -282,1141 +281,452 @@ void capitalize_tokens(vector<string> &tokens)
 }
 
 // Compiles line per line
-void compile_line(vector<string> &tokens, unsigned int line_num, compiler_state &state)
+void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilation_state &state)
 {
     string &current_file = state.current_file;
     ++line_num;
-    if (line_like("DATA:", tokens, state))
-    {
-        if (state.section_state == 1)
-            error("Duplicate DATA section declaration (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.section_state == 2)
-            error("DATA section declaration within PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        state.section_state = 1;
-        return;
-    }
-    if (line_like("PROCEDURE:", tokens, state))
-    {
-        if (state.section_state == 2)
-            error("Duplicate SECTION section declaration (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        state.section_state = 2;
-        return;
-    }
+
+    // +-------------------+
+    // | IS NUMBER Command |
+    // +-------------------+-------------------------------------------------------------------------------------------
     if (line_like("$name IS NUMBER", tokens, state))
     {
-        if (state.section_state != 1)
-            error("Variable declaration outside DATA section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (!variable_exists(tokens[0], state))
-            state.variables[tokens[0]] = 1;
+        string var_id = tokens[0];
+        if (!state.variable_exists(var_id))
+        {
+            state.add_variable(var_id, NUMBER_TYPE);
+            ex_state.AddNumberVariable(var_id);
+        }
         else
-            error("Duplicate declaration for variable " + tokens[0] + " (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("0");
-        set_var_value(state, tokens[0]);
+        {
+            error("Duplicate declaration for variable '" + var_id + "'.", current_file, line_num);
+        }
         return;
     }
+
+    // +-----------------+
+    // | IS TEXT Command |
+    // +-----------------+---------------------------------------------------------------------------------------------
     if (line_like("$name IS TEXT", tokens, state))
     {
-        if (state.section_state != 1)
-            error("Variable declaration outside DATA section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (!variable_exists(tokens[0], state))
-            state.variables[tokens[0]] = 2;
-        else
-            error("Duplicate declaration for variable " + tokens[0] + " (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("\"\"");
-        set_var_value(state, tokens[0]);
-        return;
-    }
-    if (line_like("$name IS NUMBER VECTOR", tokens, state))
-    {
-        if (state.section_state != 1)
-            error("Variable declaration outside DATA section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (!variable_exists(tokens[0], state))
+        string var_id = tokens[0];
+        if (!state.variable_exists(var_id))
         {
-            state.variables[tokens[0]] = 3;
+            state.add_variable(var_id, TEXT_TYPE);
+            ex_state.AddTextVariable(var_id);
         }
         else
-            error("Duplicate declaration for variable " + tokens[0] + " (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        return;
-    }
-    if (line_like("$name IS TEXT VECTOR", tokens, state))
-    {
-        if (state.section_state != 1)
-            error("Variable declaration outside DATA section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (!variable_exists(tokens[0], state))
         {
-            state.variables[tokens[0]] = 4;
+            error("Duplicate declaration for variable '" + var_id + "'.", current_file, line_num);
         }
-        else
-            error("Duplicate declaration for variable " + tokens[0] + " (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
         return;
     }
+
+    // +-----------------+
+    // | DISPLAY Command |
+    // +-----------------+---------------------------------------------------------------------------------------------
     if (line_like("DISPLAY $display", tokens, state))
     {
-        if (state.section_state != 2)
-            error("DISPLAY statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
         for (unsigned int i = 1; i < tokens.size(); ++i)
         {
-            // TODO ADD COLORS HERE
-            if (tokens[i] == "CRLF")
+            DISPLAY_Statement_Executor *executor = NULL;
+            string token = tokens[i];
+            if (token == "CRLF")
             {
-                state.add_code("\"\"");
-                state.add_code("PRINTLN");
+                executor = new DISPLAY_Statement_Executor("\r\n");
             }
-            else if (is_variable(tokens[i], state))
+            else if (state.variable_exists(token))
             {
-                get_var_value(state, tokens[i]);
-                state.add_code("PRINT");
+                if (state.is_num_var(token))
+                {
+                    executor = new DISPLAY_Statement_Executor(ex_state.GetNumberVariable(token));
+                }
+                else
+                {
+                    executor = new DISPLAY_Statement_Executor(ex_state.GetTextVariable(token));
+                }
             }
             else
             {
-                state.add_code(tokens[i]);
-                state.add_code("PRINT");
+                if (is_number(token))
+                {
+                    executor = new DISPLAY_Statement_Executor(stod(token));
+                }
+                else
+                {
+                    executor = new DISPLAY_Statement_Executor(token.substr(1, token.size() - 2));
+                }
             }
+            ex_state.AddExecutor(executor);
         }
         return;
     }
+
+    // +------------------------+
+    // | STORE (Number) Command |
+    // +------------------------+--------------------------------------------------------------------------------------
+    if (line_like("STORE $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand))
+        {
+            constant_value = stod(first_operand);
+        }
+        else
+        {
+            first_var = ex_state.GetNumberVariable(first_operand);
+        }
+        STORE_NUM_Statement_Executor *executor = new STORE_NUM_Statement_Executor(first_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    if (line_like("STORE $string IN $str-var", tokens, state))
+    {
+        string dest_var_id = tokens[3];
+        return;
+    }
+
+    // +-------------+
+    // | ADD Command |
+    // +-------------+-------------------------------------------------------------------------------------------------
+    if (line_like("ADD $number AND $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER *second_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand) && is_number(second_operand))
+        {
+            constant_value = stod(first_operand) + stod(second_operand);
+        }
+        else
+        {
+            if (is_number(first_operand))
+            {
+                constant_value = stod(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetNumberVariable(first_operand);
+            }
+            if (is_number(second_operand))
+            {
+                constant_value = stod(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetNumberVariable(second_operand);
+            }
+        }
+        ADD_Statement_Executor *executor = new ADD_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +------------------+
+    // | SUBTRACT Command |
+    // +------------------+--------------------------------------------------------------------------------------------
+    if (line_like("SUBTRACT $number FROM $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER *second_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand) && is_number(second_operand))
+        {
+            constant_value = stod(second_operand) - stod(first_operand);
+        }
+        else
+        {
+            if (is_number(first_operand))
+            {
+                constant_value = stod(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetNumberVariable(first_operand);
+            }
+            if (is_number(second_operand))
+            {
+                constant_value = stod(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetNumberVariable(second_operand);
+            }
+        }
+        SUBTRACT_Statement_Executor *executor = new SUBTRACT_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +----------------+
+    // | DIVIDE Command |
+    // +----------------+----------------------------------------------------------------------------------------------
+    if (line_like("DIVIDE $number BY $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER *second_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand) && is_number(second_operand))
+        {
+            constant_value = stod(first_operand) / stod(second_operand);
+        }
+        else
+        {
+            if (is_number(first_operand))
+            {
+                constant_value = stod(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetNumberVariable(first_operand);
+            }
+            if (is_number(second_operand))
+            {
+                constant_value = stod(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetNumberVariable(second_operand);
+            }
+        }
+        DIVIDE_Statement_Executor *executor = new DIVIDE_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +------------------+
+    // | MULTIPLY Command |
+    // +------------------+--------------------------------------------------------------------------------------------
+    if (line_like("MULTIPLY $number BY $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER *second_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand) && is_number(second_operand))
+        {
+            constant_value = stod(first_operand) * stod(second_operand);
+        }
+        else
+        {
+            if (is_number(first_operand))
+            {
+                constant_value = stod(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetNumberVariable(first_operand);
+            }
+            if (is_number(second_operand))
+            {
+                constant_value = stod(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetNumberVariable(second_operand);
+            }
+        }
+        MULTIPLY_Statement_Executor *executor = new MULTIPLY_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +----------------+
+    // | MODULO Command |
+    // +----------------+----------------------------------------------------------------------------------------------
+    if (line_like("MODULO $number BY $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER *second_var = NULL;
+        int constant_value = 0;
+        if (is_number(first_operand) && is_number(second_operand))
+        {
+            int value1 = stod(first_operand);
+            int value2 = stod(second_operand);
+            constant_value = value1 % value2;
+        }
+        else
+        {
+            if (is_number(first_operand))
+            {
+                constant_value = stod(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetNumberVariable(first_operand);
+            }
+            if (is_number(second_operand))
+            {
+                constant_value = stod(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetNumberVariable(second_operand);
+            }
+        }
+        MODULO_Statement_Executor *executor = new MODULO_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +---------------+
+    // | LABEL Command |
+    // +---------------+-----------------------------------------------------------------------------------------------
+    if (line_like("LABEL $name", tokens, state))
+    {
+        string label_id = tokens[1];
+        if (!state.add_label(label_id))
+        {
+            error("Duplicate label '" + label_id + "'.", current_file, line_num);
+        }
+        else
+        {
+            // Label added correctly
+            ex_state.AddLabel(label_id);
+        }
+        return;
+    }
+
+    // +---------------+
+    // | GO TO Command |
+    // +---------------+-----------------------------------------------------------------------------------------------
+    if (line_like("GO TO $name", tokens, state))
+    {
+        string label_id = tokens[2];
+        if (!state.label_exists(label_id))
+        {
+            error("Label not found '" + label_id + "'.", current_file, line_num);
+        }
+        else
+        {
+            // Label added correctly
+            GOTO_Statement_Executor *executor = new GOTO_Statement_Executor(ex_state.GetLabel(label_id));
+            ex_state.AddExecutor(executor);
+        }
+        return;
+    }
+
     if (line_like("ACCEPT $num-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("ACCEPT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("INPUT-NUM");
-        set_var_value(state, tokens[1]);
+        string dest_var_id = tokens[1];
         return;
     }
     if (line_like("ACCEPT $str-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("ACCEPT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("INPUT");
-        set_var_value(state, tokens[1]);
+        string dest_var_id = tokens[1];
         return;
     }
-    if (line_like("ACCEPT $str-var UNTIL EOF", tokens, state))
+    if (line_like("ABS $number IN $num-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("ACCEPT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("INPUT-FULL");
-        set_var_value(state, tokens[1]);
+        string dest_var_id = tokens[3];
         return;
     }
-    if (line_like("STORE $num-var IN $num-var", tokens, state))
+    if (line_like("CEIL $num-var IN $num-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        set_var_value(state, tokens[3]);
+        string dest_var_id = tokens[3];
         return;
     }
-    if (line_like("STORE $number IN $num-var", tokens, state))
+    if (line_like("FLOOR $num-var IN $num-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("STORE $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("STORE $string IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("ADD $number AND $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("ADD statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("+");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("ADD $number AND $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("ADD statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("+");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("ADD $num-var AND $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("ADD statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("+");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("ADD $num-var AND $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("ADD statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("+");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("SUBTRACT $number FROM $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("SUBTRACT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[3]);
-        state.add_code(tokens[1]);
-        state.add_code("-");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("SUBTRACT $number FROM $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("SUBTRACT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[3]);
-        state.add_code(tokens[1]);
-        state.add_code("-");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("SUBTRACT $num-var FROM $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("SUBTRACT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[3]);
-        get_var_value(state, tokens[1]);
-        state.add_code("-");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("SUBTRACT $num-var FROM $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("SUBTRACT statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[3]);
-        get_var_value(state, tokens[1]);
-        state.add_code("-");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("DIVIDE $number BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("DIVIDE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("/");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("DIVIDE $number BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("DIVIDE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("/");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("DIVIDE $num-var BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("DIVIDE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("/");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("DIVIDE $num-var BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("DIVIDE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("/");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MULTIPLY $number BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MULTIPLY statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("*");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MULTIPLY $number BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MULTIPLY statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("*");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MULTIPLY $num-var BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MULTIPLY statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("*");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MULTIPLY $num-var BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MULTIPLY statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("*");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MODULO $number BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MODULO statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("%");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MODULO $number BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MODULO statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("%");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MODULO $num-var BY $number IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MODULO statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("%");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("MODULO $num-var BY $num-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("MODULO statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("%");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("ABS $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("ABS statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("ABS");
-        set_var_value(state, tokens[1]);
+        string dest_var_id = tokens[3];
         return;
     }
     if (line_like("JOIN $string AND $string IN $str-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $string AND $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $string AND $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $string AND $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-
-    if (line_like("JOIN $number AND $string IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-STR");
-        state.add_code(tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $number AND $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-STR");
-        state.add_code(tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $number AND $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-STR");
-        get_var_value(state, tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $number AND $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-STR");
-        get_var_value(state, tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-
-    if (line_like("JOIN $str-var AND $string IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $str-var AND $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $str-var AND $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $str-var AND $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-
-    if (line_like("JOIN $num-var AND $string IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-STR");
-        state.add_code(tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $num-var AND $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-STR");
-        state.add_code(tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $num-var AND $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-STR");
-        get_var_value(state, tokens[3]);
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("JOIN $num-var AND $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("JOIN statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-STR");
-        get_var_value(state, tokens[3]);
-        state.add_code("JOIN");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("GET CHARACTER AT $num-var FROM $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("GET CHARACTER statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[3]);
-        get_var_value(state, tokens[5]);
-        state.add_code("CHARAT");
-        set_var_value(state, tokens[7]);
-        return;
-    }
-    if (line_like("GET CHARACTER AT $number FROM $str-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("GET CHARACTER statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[3]);
-        get_var_value(state, tokens[5]);
-        state.add_code("CHARAT");
-        set_var_value(state, tokens[7]);
-        return;
-    }
-    if (line_like("GET CHARACTER AT $num-var FROM $string IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("GET CHARACTER statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[3]);
-        state.add_code(tokens[5]);
-        state.add_code("CHARAT");
-        set_var_value(state, tokens[7]);
+        string dest_var_id = tokens[5];
         return;
     }
     if (line_like("GET CHARACTER AT $number FROM $string IN $str-var", tokens, state))
     {
-        if (state.section_state != 2)
-            error("GET CHARACTER statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[3]);
-        state.add_code(tokens[5]);
-        state.add_code("CHARAT");
-        set_var_value(state, tokens[7]);
+        string dest_var_id = tokens[7];
+        return;
+    }
+    if (line_like("GET LENGTH OF $string IN $str-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
         return;
     }
     if (line_like("SUB-PROCEDURE $name", tokens, state))
     {
-        if (state.section_state != 2)
-            error("SUB-PROCEDURE declaration outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (!is_subprocedure(tokens[1], state))
-            state.subprocedures.push_back(tokens[1]);
+        string sub_id = tokens[1];
+        if (state.in_subprocedure())
+        {
+            error("Sub-procedure declared inside another sub-procedure.", current_file, line_num);
+        }
+        if (state.open_subprocedure(sub_id))
+        {
+            // TODO
+        }
         else
-            error("Duplicate declaration for subprocedure " + tokens[1] + " (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.open_subprocedure != "")
-            error("Subprocedure declaration inside subprocedure (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        else
-            state.open_subprocedure = tokens[1];
-        // NVM
-        state.add_code("JMP:" + tokens[1] + "_end");
-        state.add_code("@sub_" + tokens[1]);
-        return;
+        {
+            // Subprocedure already existed
+            error("Duplicate declaration for sub-procedure '" + sub_id + "'.", current_file, line_num);
+        }
     }
     if (line_like("RETURN", tokens, state))
     {
-        if (state.section_state != 2)
-            error("RETURN outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.open_subprocedure == "")
-            error("RETURN found outside subprocedure (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("JMP-IP-POP");
+        if (!state.in_subprocedure())
+        {
+            // Return found outside SUB-PROCEDURE
+            error("RETURN command found outside a sub-procedure.", current_file, line_num);
+        }
         return;
     }
     if (line_like("END SUB-PROCEDURE", tokens, state))
     {
-        if (state.section_state != 2)
-            error("END SUB-PROCEDURE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.open_subprocedure == "")
-            error("END SUB-PROCEDURE found outside subprocedure (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("JMP-IP-POP");
-        state.add_code("@" + state.open_subprocedure + "_end");
-        // Cierro la subrutina
-        state.open_subprocedure = "";
+        if (!state.in_subprocedure())
+        {
+            // ENDSUB outside SUB
+            error("END SUB-PROCEDURE command found outside a sub-procedure.", current_file, line_num);
+        }
+        else
+        {
+            state.close_subprocedure();
+        }
         return;
     }
-
-    if (line_like("IF $number IS EQUAL TO $number THEN", tokens, state))
+    if (line_like("IF $condition THEN", tokens, state))
     {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
         int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
         return;
     }
-    if (line_like("IF $number IS EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $number IS NOT EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $number IS NOT EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS NOT EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS NOT EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $number IS GREATER THAN $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $number IS GREATER THAN $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS GREATER THAN $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS GREATER THAN $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $number IS LESS THAN $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $number IS LESS THAN $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS LESS THAN $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS LESS THAN $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $number IS GREATER THAN OR EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $number IS GREATER THAN OR EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS GREATER THAN OR EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS GREATER THAN OR EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $number IS LESS THAN OR EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $number IS LESS THAN OR EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS LESS THAN OR EQUAL TO $number THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $num-var IS LESS THAN OR EQUAL TO $num-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $string IS EQUAL TO $string THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $string IS EQUAL TO $str-var THEN", tokens, state))
-    {
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $str-var IS EQUAL TO $string THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $str-var IS EQUAL TO $str-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
-    if (line_like("IF $string IS NOT EQUAL TO $string THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $string IS NOT EQUAL TO $str-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $str-var IS NOT EQUAL TO $string THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-    if (line_like("IF $str-var IS NOT EQUAL TO $str-var THEN", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int if_num = state.add_if();
-        state.add_code("@if" + to_string(if_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:else" + to_string(if_num));
-        return;
-    }
-
     if (line_like("ELSE", tokens, state))
     {
-        if (state.section_state != 2)
-            error("ELSE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.if_stack.size() == 0)
-            error("ELSE without IF (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int ifNum = state.if_stack.top();
-        state.if_stack.pop();
-        state.add_code("JMP:endif" + to_string(ifNum));
-        state.add_code("@else" + to_string(ifNum));
+        // int ifNum = state.if_stack.top();
+        // state.if_stack.pop();
         return;
     }
     if (line_like("END IF", tokens, state) || line_like("END-IF", tokens, state))
     {
-        if (state.section_state != 2)
-            error("END IF outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.if_stack.size() == 0)
-            error("END IF without IF (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
+        /*if (state.if_stack.size() == 0)
+        {
+            error("END IF without IF (" + current_file + ", line " + to_string(line_num) + ")");
+        }*/
+        /*// NVM
         int ifNum = state.if_stack.top();
         state.if_stack.pop();
         // Si no tenía ELSE
@@ -1425,727 +735,68 @@ void compile_line(vector<string> &tokens, unsigned int line_num, compiler_state 
             state.if_stack.pop();
             state.add_code("@else" + to_string(ifNum));
         }
-        state.add_code("@endif" + to_string(ifNum));
+        state.add_code("@endif" + to_string(ifNum));*/
         return;
     }
 
-    if (line_like("WHILE $number IS EQUAL TO $number DO", tokens, state))
+    if (line_like("WHILE $condition DO", tokens, state))
     {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
         int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
         return;
     }
-    if (line_like("WHILE $number IS EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $number IS NOT EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $number IS NOT EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS NOT EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS NOT EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $number IS GREATER THAN $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $number IS GREATER THAN $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS GREATER THAN $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS GREATER THAN $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code(">");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $number IS LESS THAN $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $number IS LESS THAN $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS LESS THAN $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS LESS THAN $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("<");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $number IS GREATER THAN OR EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $number IS GREATER THAN OR EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS GREATER THAN OR EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS GREATER THAN OR EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code(">=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $number IS LESS THAN OR EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $number IS LESS THAN OR EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS LESS THAN OR EQUAL TO $number DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $num-var IS LESS THAN OR EQUAL TO $num-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[8]);
-        state.add_code("<=");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $string IS EQUAL TO $string DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $string IS EQUAL TO $str-var DO", tokens, state))
-    {
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $str-var IS EQUAL TO $string DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $str-var IS EQUAL TO $str-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[5]);
-        state.add_code("==");
-        state.add_code("NOT");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
-    if (line_like("WHILE $string IS NOT EQUAL TO $string DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $string IS NOT EQUAL TO $str-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        state.add_code(tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $str-var IS NOT EQUAL TO $string DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        state.add_code(tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-    if (line_like("WHILE $str-var IS NOT EQUAL TO $str-var DO", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("WHILE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.add_while();
-        state.add_code("@while" + to_string(while_num));
-        get_var_value(state, tokens[1]);
-        get_var_value(state, tokens[6]);
-        state.add_code("==");
-        state.add_code("IF:exit_loop" + to_string(while_num));
-        return;
-    }
-
     if (line_like("REPEAT", tokens, state))
     {
-        if (state.section_state != 2)
-            error("REPEAT outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.while_stack.size() == 0)
-            error("REPEAT without WHILE (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
+        /*if (state.while_stack.size() == 0)
+        {
+            error("REPEAT called without a preceding WHILE.", current_file, line_num);
+        }
         int while_num = state.while_stack.top();
-        state.while_stack.pop();
-        state.add_code("JMP:while" + to_string(while_num));
-        state.add_code("@exit_loop" + to_string(while_num));
+        state.while_stack.pop();*/
         return;
     }
-
     if (line_like("BREAK", tokens, state))
     {
-        if (state.section_state != 2)
-            error("BREAK outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.while_stack.size() == 0)
-            error("BREAK without WHILE (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.while_stack.top();
-        state.add_code("JMP:exit_loop" + to_string(while_num));
+        /*if (state.while_stack.size() == 0)
+        {
+            error("BREAK called outside a WHILE.", current_file, line_num);
+        }
+        int while_num = state.while_stack.top();*/
         return;
     }
-
     if (line_like("CONTINUE", tokens, state))
     {
-        if (state.section_state != 2)
-            error("CONTINUE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        if (state.while_stack.size() == 0)
-            error("CONTINUE without WHILE (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        int while_num = state.while_stack.top();
-        state.add_code("JMP:while" + to_string(while_num));
+        /*if (state.while_stack.size() == 0)
+        {
+            error("CONTINUE called outside a WHILE.", current_file, line_num);
+        }
+        int while_num = state.while_stack.top();*/
         return;
     }
 
     if (line_like("CALL SUB-PROCEDURE $subprocedure", tokens, state))
     {
-        if (state.section_state != 2)
-            error("CALL SUB-PROCEDURE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("IP");
-        state.add_code("3");
-        state.add_code("+");
-        state.add_code("JMP:sub_" + tokens[2]);
+        string sub_id = tokens[2];
         return;
     }
-
-    if (line_like("EXECUTE $string", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("SYS-EXEC");
-        state.add_code("POP");
-        return;
-    }
-    if (line_like("EXECUTE $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("SYS-EXEC");
-        state.add_code("POP");
-        return;
-    }
-    if (line_like("EXECUTE $string AND STORE OUTPUT IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("SYS-EXEC-OUT");
-        set_var_value(state, tokens[6]);
-        return;
-    }
-    if (line_like("EXECUTE $str-var AND STORE OUTPUT IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("SYS-EXEC-OUT");
-        set_var_value(state, tokens[6]);
-        return;
-    }
-    if (line_like("EXECUTE $string AND STORE EXIT CODE IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("SYS-EXEC");
-        set_var_value(state, tokens[7]);
-        return;
-    }
-    if (line_like("EXECUTE $str-var AND STORE EXIT CODE IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("SYS-EXEC");
-        set_var_value(state, tokens[7]);
-        return;
-    }
-    if (line_like("EXIT", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXIT outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("HALT");
-        return;
-    }
-    if (line_like("STORE LENGTH OF $str-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[3]);
-        state.add_code("LENGTH");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    if (line_like("STORE LENGTH OF $string IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("EXECUTE outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[3]);
-        state.add_code("LENGTH");
-        set_var_value(state, tokens[5]);
-        return;
-    }
-    // Desde acá faltan en el standard
-    if (line_like("STORE RANDOM IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("RANDOM outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code("RANDOM");
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("FLOOR $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("FLOOR statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("FLOOR");
-        set_var_value(state, tokens[1]);
-        return;
-    }
-    if (line_like("CEIL $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("CEIL statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("CEIL");
-        set_var_value(state, tokens[1]);
-        return;
-    }
-    if (line_like("STORE $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-STR");
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("STORE $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-STR");
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("STORE $string IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[1]);
-        state.add_code("TO-NUM");
-        set_var_value(state, tokens[3]);
-        return;
-    }
-    if (line_like("STORE $str-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[1]);
-        state.add_code("TO-NUM");
-        set_var_value(state, tokens[3]);
-        return;
-    }
-
-    if (line_like("STORE CHARACTER $number IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[2]);
-        state.add_code("CHR");
-        set_var_value(state, tokens[4]);
-        return;
-    }
-    if (line_like("STORE CHARACTER $num-var IN $str-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[2]);
-        state.add_code("CHR");
-        set_var_value(state, tokens[4]);
-        return;
-    }
-
-    if (line_like("STORE CHARACTER CODE OF $string IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        state.add_code(tokens[4]);
-        state.add_code("ORD");
-        set_var_value(state, tokens[6]);
-        return;
-    }
-    if (line_like("STORE CHARACTER CODE OF $str-var IN $num-var", tokens, state))
-    {
-        if (state.section_state != 2)
-            error("STORE statement outside PROCEDURE section (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
-        // NVM
-        get_var_value(state, tokens[4]);
-        state.add_code("ORD");
-        set_var_value(state, tokens[6]);
-        return;
-    }
-
-    error("Malformed statement (\033[0m" + current_file + ":" + to_string(line_num) + "\033[1;31m)");
+    error("The line is malformed or contains some errors.", current_file, line_num);
 }
 
 // Check if the tokens of a line passed are like the ones of a model line
-bool line_like(string model_line, vector<string> tokens, compiler_state &state)
+bool line_like(string model_line, vector<string> tokens, ldpl_compilation_state &state)
 {
     // Tokenize model line
     vector<string> model_tokens;
     tokenize(model_line, 0, model_tokens, state.current_file);
     // Check that tokens match between line and model line
     if (tokens.size() < model_tokens.size())
+    {
         return false;
+    }
     unsigned int i = 0;
     for (; i < model_tokens.size(); ++i)
     {
         if (model_tokens[i] == "$name") //$name is any word that is not a string or a number
         {
-            for (char letter : model_tokens[i])
-                if (letter == ':')
-                    return false;
             if (is_string(tokens[i]))
                 return false;
             if (is_number(tokens[i]))
@@ -2153,40 +804,35 @@ bool line_like(string model_line, vector<string> tokens, compiler_state &state)
         }
         else if (model_tokens[i] == "$num-var") //$num-var is NUMBER variable
         {
-            if (!is_num_var(tokens[i], state))
+            if (!state.is_num_var(tokens[i]))
                 return false;
         }
         else if (model_tokens[i] == "$str-var") //$str-var is TEXT variable
         {
-            if (!is_txt_var(tokens[i], state))
+            if (!state.is_txt_var(tokens[i]))
                 return false;
         }
-        else if (model_tokens[i] == "$string") //$string is a string (?
+        else if (model_tokens[i] == "$string") //$string is a string value
         {
-            if (!is_string(tokens[i]))
+            if (!is_string(tokens[i]) && !state.is_txt_var(tokens[i]))
                 return false;
         }
-        else if (model_tokens[i] == "$number") //$number is a number (?
+        else if (model_tokens[i] == "$number") //$number is a numeric value
         {
-            if (!is_number(tokens[i]))
-                return false;
-        }
-        else if (model_tokens[i] == "$natural") //$natural is an integer greater than 0
-        {
-            if (!is_natural(tokens[i]))
+            if (!is_number(tokens[i]) && !state.is_num_var(tokens[i]))
                 return false;
         }
         else if (model_tokens[i] == "$display") // multiple NUMBER, TEXT, TEXT-VAR, NUMBER-VAR or CRLF
         {
             for (; i < tokens.size(); ++i)
             {
-                if (!is_string(tokens[i]) && !is_number(tokens[i]) && !is_variable(tokens[i], state) && tokens[i] != "CRLF")
+                if (!is_string(tokens[i]) && !is_number(tokens[i]) && !state.variable_exists(tokens[i]) && tokens[i] != "CRLF")
                     return false;
             }
         }
-        else if (model_tokens[i] == "$subprocedure") //$subprocedure is a SUB-PROCEDURE (?
+        else if (model_tokens[i] == "$subprocedure") //$subprocedure is a SUB-PROCEDURE
         {
-            if (!is_subprocedure(tokens[i], state))
+            if (!state.subprocedure_exists(tokens[i]))
                 return false;
         }
         else if (model_tokens[i] != tokens[i])
@@ -2197,6 +843,9 @@ bool line_like(string model_line, vector<string> tokens, compiler_state &state)
     return true;
 }
 
+/// @brief Checks if a string represents a valid number.
+/// @param number
+/// @return True if the string represents a valid number. Otherwise false.
 bool is_number(string number)
 {
     try
@@ -2210,274 +859,7 @@ bool is_number(string number)
     return true;
 }
 
-bool is_natural(string number)
-{
-    if (!is_number(number))
-        return false;
-    if (stod(number) <= 0)
-        return false;
-    for (char l : number)
-        if (l == '.')
-            return false;
-    return true;
-}
-
 bool is_string(string &token)
 {
     return (token.size() >= 2 && token[0] == '"' && token[token.size() - 1] == '"');
-}
-
-bool is_num_vector(string &token, compiler_state &state)
-{
-    if (state.variables.count(token) > 0 && state.variables[token] == 3)
-        return true;
-    return false;
-}
-
-bool is_txt_vector(string &token, compiler_state &state)
-{
-    if (state.variables.count(token) > 0 && state.variables[token] == 4)
-        return true;
-    return false;
-}
-
-bool is_vector(string &token, compiler_state &state)
-{
-    return is_num_vector(token, state) || is_txt_vector(token, state);
-}
-
-bool is_vector_index(queue<string> &token, compiler_state &state)
-{
-    string current_token = token.front();
-    token.pop();
-    if (token.size() > 1)
-    {
-        if (!is_vector(current_token, state))
-            return false;
-        return is_vector_index(token, state);
-    }
-    else if (token.size() == 1)
-    {
-        if (!is_vector(current_token, state))
-            return false;
-        if (!is_num_var(token.front(), state) && !is_number(token.front()) && !is_string(token.front()))
-            return false;
-        return true;
-    }
-    return false;
-}
-
-bool is_num_var(string &token, compiler_state &state)
-{
-    // Veo si var
-    if (state.variables.count(token) > 0 && state.variables[token] == 1)
-        return true;
-    // Veo si num_vector index
-    queue<string> vpart;
-    split_vector(token, vpart);
-    return is_num_vector(vpart.front(), state) && is_vector_index(vpart, state);
-}
-
-bool is_txt_var(string &token, compiler_state &state)
-{
-    if (state.variables.count(token) > 0 && state.variables[token] == 2)
-        return true;
-    // Veo si num_vector index
-    queue<string> vpart;
-    split_vector(token, vpart);
-    return is_txt_vector(vpart.front(), state) && is_vector_index(vpart, state);
-}
-
-bool is_variable(string &token, compiler_state &state)
-{
-    return is_num_var(token, state) || is_txt_var(token, state);
-}
-
-void split_vector(string &line, queue<string> &tokens)
-{
-    bool in_string = false;
-    string current_token = "";
-    // For each letter in the line
-    for (unsigned int i = 0; i < line.size(); ++i)
-    {
-        char letter = line[i];
-        if (letter == ':')
-        {
-            if (in_string)
-                current_token += letter;
-            else
-            {
-                if (current_token.size() > 0)
-                    tokens.push(current_token);
-                current_token = "";
-            }
-        }
-        else if (letter == '"')
-        {
-            in_string = !in_string;
-            current_token += letter;
-        }
-        else if (letter == '\\')
-        {
-            if (i < line.size() - 1)
-            {
-                char next_letter = line[++i];
-                if (next_letter == '\\' || next_letter == '"')
-                    current_token += next_letter;
-                else
-                    error("unknown escape sequence on a VECTOR access.");
-            }
-            else
-                error("\\ found alone on a VECTOR access.");
-        }
-        else if (letter == '#') // Comment character
-        {
-            if (in_string)
-                current_token += letter;
-            else
-            {
-                if (current_token.size() > 0)
-                    tokens.push(current_token);
-                return;
-            }
-        }
-        else
-        {
-            current_token += letter;
-        }
-        if (i == line.size() - 1)
-        {
-            if (letter != ':')
-            {
-                if (in_string)
-                    error("Unterminated string on a VECTOR access.");
-                if (current_token.size() > 0)
-                    tokens.push(current_token);
-            }
-            else
-                error("Incomplete VECTOR access found (can't end on ':'!).");
-        }
-    }
-}
-
-/*La diferencia entre is_variable y variable_exists es que is_variable
- no toma los vectores como una variable, sino los índices de los vectores.
- Variable exists te dice si una variable está declarada como tal, por lo que
- un subíndice de vector no sería una variable.*/
-bool variable_exists(string &token, compiler_state &state)
-{
-    return state.variables.count(token) > 0;
-}
-
-bool is_subprocedure(string &token, compiler_state &state)
-{
-    for (string &var : state.subprocedures)
-        if (var == token)
-            return true;
-    return false;
-}
-
-void get_var_value(compiler_state &state, string &variable)
-{
-    int vartype;
-    queue<string> vpart;
-    split_vector(variable, vpart);
-    if (vpart.size() == 1)
-    {
-        vartype = state.variables[variable];
-        if (vartype == 2 || vartype == 4)
-            state.add_code("AUX-S:" + variable);
-        else
-            state.add_code("AUX:" + variable);
-        return;
-    }
-    stack<string> token;
-    while (!vpart.empty())
-    {
-        token.push(vpart.front());
-        vpart.pop();
-    }
-    // Last element of vector access:
-    string t = token.top();
-    token.pop();
-    if (is_number(t) || is_string(t))
-        state.add_code(t);
-    else
-    {
-        vartype = state.variables[t];
-        if (vartype == 2 || vartype == 4)
-            state.add_code("AUX-S:" + t);
-        else
-            state.add_code("AUX:" + t);
-    }
-
-    while (!token.empty())
-    {
-        t = token.top();
-        token.pop();
-        state.add_code("\"" + t + ":\"");
-        state.add_code("SWAP");
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        vartype = state.variables[t];
-        if (vartype == 2 || vartype == 4)
-            state.add_code("AUX-S-POP");
-        else
-            state.add_code("AUX-POP");
-    }
-}
-
-// Setea el valor de una variable o vector
-void set_var_value(compiler_state &state, string &variable)
-{
-    int vartype;
-    queue<string> vpart;
-    split_vector(variable, vpart);
-    if (vpart.size() == 1)
-    {
-        state.add_code("TOAUX:" + variable);
-        return;
-    }
-    stack<string> token;
-    while (!vpart.empty())
-    {
-        token.push(vpart.front());
-        vpart.pop();
-    }
-    // Last element of vector access:
-    string t = token.top();
-    token.pop();
-    if (is_number(t) || is_string(t))
-        state.add_code(t);
-    else
-    {
-        vartype = state.variables[t];
-        if (vartype == 2 || vartype == 4)
-            state.add_code("AUX-S:" + t);
-        else
-            state.add_code("AUX:" + t);
-    }
-
-    while (!token.empty())
-    {
-        t = token.top();
-        token.pop();
-        state.add_code("\"" + t + ":\"");
-        state.add_code("SWAP");
-        state.add_code("TO-STR");
-        state.add_code("JOIN");
-        if (!token.empty())
-        {
-            vartype = state.variables[t];
-            if (vartype == 2 || vartype == 4)
-                state.add_code("AUX-S-POP");
-            else
-                state.add_code("AUX-POP");
-        }
-        else
-        {
-            state.add_code("SWAP");
-            state.add_code("TOAUX-POP");
-        }
-    }
 }

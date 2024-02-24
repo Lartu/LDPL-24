@@ -252,11 +252,6 @@
 						ACCEPT
 					</a>
 				</li>
-				<li>
-					<a href="#execute">
-						EXECUTE
-					</a>
-				</li>
 			</ul>
 		</li>
 		<li>
@@ -1100,33 +1095,6 @@
 			specified, anything the user enters before pressing the 'return' key will be accepted. If a NUMBER variable
 			is specified, the user must enter a number (if any non-numeric key is entered, the error message "Redo from
 			start" will be output and the ACCEPT command rerun).
-		</li>
-	</ul>
-
-	<h4 id="execute">
-		EXECUTE
-	</h4>
-
-	<ul>
-		<li><b>Syntax:</b>
-			<p>
-			<div class="code">
-				EXECUTE <span style="color: magenta">multiple NUMBER, TEXT, TEXT-VAR or NUMBER-VAR</span>
-			</div>
-			</p>
-		</li>
-
-		<li>
-			<b>Description:</b> concatenates all the passed values as a single command and executes the specified
-			command, dumping any resulting text to the output stream.
-		</li>
-
-		<li><b>Example:</b>
-			<p>
-			<div class="code">
-				EXECUTE "echo " myVariable " >> myFile"
-			</div>
-			</p>
 		</li>
 	</ul>
 
