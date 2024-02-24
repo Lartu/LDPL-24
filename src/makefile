@@ -3,7 +3,7 @@ SOURCE = ldpl.cpp
 HEADER = ldpl.h nvm.h cpptrim.h
 OUT = ldpl
 CC = c++
-FLAGS = -g -c -Wall -std=c++03
+FLAGS = -g -c -Wall -std=c++03 -Ofast -march=native
 #LFLAGS = -static-libgcc -static-libstdc++
 
 all: $(OBJS)
