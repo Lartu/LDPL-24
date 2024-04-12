@@ -25,6 +25,8 @@ These are features that were present when LDPL 1.1.2 ran on the NariVM. The curr
 - [ ] `IF` blocks
 - [ ] `WHILE` blocks
 
+All other features present in LDPL 1.1.2 have already been updated.
+
 ### 🚀 Missing features not present in LDPL 1.1.2
 - [ ] `GET LENGTH OF <vector> IN <number variable>` (backport from LDPL 2.1.0)
 - [ ] Fix `WHILE string IS NOT EQUAL TO string DO` (backport from LDPL 2.1.2)
