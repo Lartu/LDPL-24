@@ -16,21 +16,22 @@ This is a fork of **[LDPL](http://github.com/lartu/ldpl/) 1.1.2**, from March 6,
 
 ### 🔎 Missing NariVM features
 These are features that were present when LDPL 1.1.2 ran on the NariVM. The current version doesn't and favours an execution tree instead, which is faster.
-- [ ] `ACCEPT` using ldplnoise
-- [ ] `ABS ... IN ...`
-- [ ] `CEIL ... IN ...`
-- [ ] `FLOOR ... IN ...`
+- [X] `STORE` for TEXT values
+- [X] `ACCEPT` using ldplnoise
+- [X] `ABS ... IN ...`
+- [X] `CEIL ... IN ...`
+- [X] `FLOOR ... IN ...`
 - [ ] `JOIN ... AND ... IN ...`
 - [ ] `GET CHARACTER AT ... FROM ... IN ...`
 - [ ] `GET LENGTH OF ... IN ...`
 - [ ] `SUB-PROCEDURES`
 - [ ] `IF` blocks
 - [ ] `WHILE` blocks
+- [ ] Update documentation removing removed parts and adding new commands.
 
 All other features present in LDPL 1.1.2 have already been updated.
 
 ### 🚀 Missing features not present in LDPL 1.1.2
-- [ ] `GET LENGTH OF <vector> IN <number variable>` (backport from LDPL 2.1.0)
 - [ ] Fix `WHILE string IS NOT EQUAL TO string DO` (backport from LDPL 2.1.2)
 - [ ] Backport bugfixes from versions newer than 1.1.2
 - [ ] `CALL` from LDPL 2.2.0
