@@ -354,7 +354,7 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
                 }
                 else
                 {
-                    executor = new DISPLAY_Statement_Executor(token.substr(1, token.size() - 2));
+                    executor = new DISPLAY_Statement_Executor(prepare_string(token));
                 }
             }
             ex_state.AddExecutor(executor);
@@ -382,12 +382,6 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         }
         STORE_NUM_Statement_Executor *executor = new STORE_NUM_Statement_Executor(first_var, constant_value, destination_var);
         ex_state.AddExecutor(executor);
-        return;
-    }
-
-    if (line_like("STORE $string IN $str-var", tokens, state))
-    {
-        string dest_var_id = tokens[3];
         return;
     }
 
@@ -630,42 +624,124 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         return;
     }
 
-    if (line_like("ACCEPT $num-var", tokens, state))
-    {
-        string dest_var_id = tokens[1];
-        return;
-    }
-    if (line_like("ACCEPT $str-var", tokens, state))
-    {
-        string dest_var_id = tokens[1];
-        return;
-    }
+    // +-------------+
+    // | ABS Command |
+    // +-------------+-------------------------------------------------------------------------------------------------
     if (line_like("ABS $number IN $num-var", tokens, state))
     {
         string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand))
+        {
+            constant_value = stod(first_operand);
+        }
+        else
+        {
+            first_var = ex_state.GetNumberVariable(first_operand);
+        }
+        ABS_Statement_Executor *executor = new ABS_Statement_Executor(first_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
         return;
     }
-    if (line_like("CEIL $num-var IN $num-var", tokens, state))
+
+    // +--------------+
+    // | CEIL Command |
+    // +--------------+------------------------------------------------------------------------------------------------
+    if (line_like("CEIL $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand))
+        {
+            constant_value = stod(first_operand);
+        }
+        else
+        {
+            first_var = ex_state.GetNumberVariable(first_operand);
+        }
+        CEIL_Statement_Executor *executor = new CEIL_Statement_Executor(first_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +---------------+
+    // | FLOOR Command |
+    // +---------------+-----------------------------------------------------------------------------------------------
+    if (line_like("FLOOR $number IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        NUMBER *destination_var = ex_state.GetNumberVariable(dest_var_id);
+        NUMBER *first_var = NULL;
+        NUMBER constant_value = 0;
+        if (is_number(first_operand))
+        {
+            constant_value = stod(first_operand);
+        }
+        else
+        {
+            first_var = ex_state.GetNumberVariable(first_operand);
+        }
+        FLOOR_Statement_Executor *executor = new FLOOR_Statement_Executor(first_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    // +----------------+
+    // | ACCEPT Command |
+    // +----------------+----------------------------------------------------------------------------------------------
+    if (line_like("ACCEPT $text IN $var", tokens, state))
+    {
+        string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        NUMBER *destination_number = NULL;
+        TEXT *destination_text = NULL;
+        TEXT prompt = "> ";
+        // Get prompt
+        if(is_string(first_operand))
+        {
+            prompt = prepare_string(first_operand);
+        }else{
+            prompt = *ex_state.GetTextVariable(dest_var_id);
+        }
+        // TEXT VARIABLE case
+        if(state.is_txt_var(dest_var_id))
+        {
+            destination_text = ex_state.GetTextVariable(dest_var_id);
+        }
+        // NUMBER VARIABLE case
+        else if(state.is_num_var(dest_var_id))
+        {
+            destination_number = ex_state.GetNumberVariable(dest_var_id);
+        }
+        ACCEPT_Statement_Executor *executor = new ACCEPT_Statement_Executor(destination_number, destination_text, prompt);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
+    if (line_like("STORE $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[3];
         return;
     }
-    if (line_like("FLOOR $num-var IN $num-var", tokens, state))
-    {
-        string dest_var_id = tokens[3];
-        return;
-    }
-    if (line_like("JOIN $string AND $string IN $str-var", tokens, state))
+
+    if (line_like("JOIN $text AND $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[5];
         return;
     }
-    if (line_like("GET CHARACTER AT $number FROM $string IN $str-var", tokens, state))
+    if (line_like("GET CHARACTER AT $number FROM $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[7];
         return;
     }
-    if (line_like("GET LENGTH OF $string IN $str-var", tokens, state))
+    if (line_like("GET LENGTH OF $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[5];
         return;
@@ -812,12 +888,17 @@ bool line_like(string model_line, vector<string> tokens, ldpl_compilation_state 
             if (!state.is_txt_var(tokens[i]))
                 return false;
         }
-        else if (model_tokens[i] == "$string") //$string is a string value
+        else if (model_tokens[i] == "$var") //$num-var is NUMBER or TEXT variable
+        {
+            if (!state.is_num_var(tokens[i]) && !state.is_txt_var(tokens[i]))
+                return false;
+        }
+        else if (model_tokens[i] == "$text") //$text is a string value (constant or variable)
         {
             if (!is_string(tokens[i]) && !state.is_txt_var(tokens[i]))
                 return false;
         }
-        else if (model_tokens[i] == "$number") //$number is a numeric value
+        else if (model_tokens[i] == "$number") //$number is a numeric value (constant or variable)
         {
             if (!is_number(tokens[i]) && !state.is_num_var(tokens[i]))
                 return false;
@@ -862,4 +943,9 @@ bool is_number(string number)
 bool is_string(string &token)
 {
     return (token.size() >= 2 && token[0] == '"' && token[token.size() - 1] == '"');
+}
+
+string prepare_string(string &str)
+{
+    return str.substr(1, str.size() - 2);
 }

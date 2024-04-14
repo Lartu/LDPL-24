@@ -5,6 +5,7 @@
 #include <stack>
 #include <queue>
 #include <locale>
+#include <cmath>
 #include <map>
 #include "cpptrim.h"
 #include "state.cpp"
@@ -16,6 +17,10 @@
 #include "executors/store_num.cpp"
 #include "executors/display.cpp"
 #include "executors/goto.cpp"
+#include "executors/abs.cpp"
+#include "executors/ceil.cpp"
+#include "executors/floor.cpp"
+#include "executors/accept.cpp"
 
 #ifndef VERSION
 #define VERSION 0
@@ -31,6 +36,7 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
 bool line_like(string model_line, vector<string> tokens, ldpl_compilation_state &state); // Important to pass tokens by copy
 bool is_number(string number);
 bool is_string(string &token);
+string prepare_string(string &str);
 void capitalize_tokens(vector<string> &tokens);
 void load_and_compile(string &filename, ldpl_compilation_state &state);
 void replace_whitespace(string &code);
