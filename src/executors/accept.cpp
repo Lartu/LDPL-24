@@ -12,14 +12,22 @@ private:
     NUMBER *_destination_number = NULL;
     TEXT *_destination_string = NULL;
     TEXT _prompt = "";
+    TEXT *_prompt_var = NULL;
     unsigned int type = 0;
 
 public:
-    ACCEPT_Statement_Executor(NUMBER *destination_number, TEXT *destination_string, TEXT &prompt)
+    ACCEPT_Statement_Executor(NUMBER *destination_number, TEXT *destination_string, TEXT &prompt, TEXT *prompt_var)
     {
         _destination_number = destination_number;
         _destination_string = destination_string;
-        _prompt = prompt;
+        if (prompt_var == NULL)
+        {
+            _prompt = prompt;
+        }
+        else
+        {
+            _prompt_var = prompt_var;
+        }
         if (_destination_string == NULL)
         {
             // ACCEPT number
@@ -34,15 +42,33 @@ public:
 
     void execute(size_t *program_counter) override
     {
+    retry:
         linenoise::SetHistoryMaxLen(100);
         string input = RL_INPUT;
-        linenoise::Readline(_prompt.c_str(), input);
+        if (_prompt_var == NULL)
+        {
+            // Constant Prompt
+            linenoise::Readline(_prompt.c_str(), input);
+        }
+        else
+        {
+            // Variable Prompt
+            linenoise::Readline((*_prompt_var).c_str(), input);
+        }
         RL_INPUT = input;
         linenoise::AddHistory(RL_INPUT.c_str());
 
         if (type == 0)
         {
-            *_destination_number = stod(RL_INPUT);
+            if (is_number(RL_INPUT))
+            {
+                *_destination_number = stod(RL_INPUT);
+            }
+            else
+            {
+                cout << "Enter a numeric value." << endl;
+                goto retry;
+            }
         }
         else if (type == 1)
         {

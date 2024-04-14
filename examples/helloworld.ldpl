@@ -1,6 +1,10 @@
 mynumber IS NUMBER
+myprompt IS TEXT
 
-ACCEPT "Enter a number to abs: " IN mynumber
+STORE "Enter a number to abs: " IN myprompt
+DISPLAY "Prompt to display: '" myprompt "'" CRLF
+
+ACCEPT myprompt IN mynumber
 DISPLAY "Without absing: " mynumber CRLF
 ABS mynumber in mynumber
 DISPLAY "Absed:          " mynumber CRLF

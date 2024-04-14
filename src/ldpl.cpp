@@ -703,31 +703,51 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         NUMBER *destination_number = NULL;
         TEXT *destination_text = NULL;
         TEXT prompt = "> ";
+        TEXT *prompt_var = NULL;
         // Get prompt
-        if(is_string(first_operand))
+        if (is_string(first_operand))
         {
             prompt = prepare_string(first_operand);
-        }else{
-            prompt = *ex_state.GetTextVariable(dest_var_id);
+        }
+        else
+        {
+            prompt_var = ex_state.GetTextVariable(first_operand);
         }
         // TEXT VARIABLE case
-        if(state.is_txt_var(dest_var_id))
+        if (state.is_txt_var(dest_var_id))
         {
             destination_text = ex_state.GetTextVariable(dest_var_id);
         }
         // NUMBER VARIABLE case
-        else if(state.is_num_var(dest_var_id))
+        else if (state.is_num_var(dest_var_id))
         {
             destination_number = ex_state.GetNumberVariable(dest_var_id);
         }
-        ACCEPT_Statement_Executor *executor = new ACCEPT_Statement_Executor(destination_number, destination_text, prompt);
+        ACCEPT_Statement_Executor *executor = new ACCEPT_Statement_Executor(destination_number, destination_text, prompt, prompt_var);
         ex_state.AddExecutor(executor);
         return;
     }
 
+    // +----------------------+
+    // | STORE (Text) Command |
+    // +----------------------+----------------------------------------------------------------------------------------
     if (line_like("STORE $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[3];
+        string first_operand = tokens[1];
+        TEXT *destination_var = ex_state.GetTextVariable(dest_var_id);
+        TEXT *first_var = NULL;
+        TEXT constant_value = "";
+        if (is_string(first_operand))
+        {
+            constant_value = prepare_string(first_operand);
+        }
+        else
+        {
+            first_var = ex_state.GetTextVariable(first_operand);
+        }
+        STORE_TEXT_Statement_Executor *executor = new STORE_TEXT_Statement_Executor(first_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
         return;
     }
 

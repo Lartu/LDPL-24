@@ -7,20 +7,6 @@
 #include <locale>
 #include <cmath>
 #include <map>
-#include "cpptrim.h"
-#include "state.cpp"
-#include "executors/add.cpp"
-#include "executors/subtract.cpp"
-#include "executors/divide.cpp"
-#include "executors/multiply.cpp"
-#include "executors/modulo.cpp"
-#include "executors/store_num.cpp"
-#include "executors/display.cpp"
-#include "executors/goto.cpp"
-#include "executors/abs.cpp"
-#include "executors/ceil.cpp"
-#include "executors/floor.cpp"
-#include "executors/accept.cpp"
 
 #ifndef VERSION
 #define VERSION 0
@@ -41,3 +27,19 @@ void capitalize_tokens(vector<string> &tokens);
 void load_and_compile(string &filename, ldpl_compilation_state &state);
 void replace_whitespace(string &code);
 void displayVersionInfo();
+
+#include "cpptrim.h"
+#include "state.cpp"
+#include "executors/add.cpp"
+#include "executors/subtract.cpp"
+#include "executors/divide.cpp"
+#include "executors/multiply.cpp"
+#include "executors/modulo.cpp"
+#include "executors/store_num.cpp"
+#include "executors/display.cpp"
+#include "executors/goto.cpp"
+#include "executors/abs.cpp"
+#include "executors/ceil.cpp"
+#include "executors/floor.cpp"
+#include "executors/accept.cpp"
+#include "executors/store_text.cpp"
