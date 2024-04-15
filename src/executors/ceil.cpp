@@ -26,7 +26,7 @@ public:
         }
     }
 
-    void execute(size_t *program_counter) override
+    void execute(size_t *program_counter, LDPL_Execution_State *state) override
     {
         if (type == 0)
         {

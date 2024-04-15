@@ -85,7 +85,8 @@ int main(int argc, const char *argv[])
         load_and_compile(filename, state);
     }
     // Run the compiled code
-    ex_state.execute();
+    size_t start_pc = ex_state.GetLabel("START");
+    ex_state.execute(start_pc);
 }
 
 void displayVersionInfo()
@@ -178,10 +179,12 @@ void compile(vector<string> &lines, ldpl_compilation_state &state)
         capitalize_tokens(tokens);
         if (tokens.size() == 0)
             continue;
-        // TODO: pasar tokens que no sean strings a uppercase
         compile_line(tokens, line_num, state);
     }
-    // TODO: si llega acá y hay ifs sin cerrar o procedures sin cerrar, te comés puteada
+    if(!state.label_exists("START"))
+    {
+        error("Label 'START' not found. You must have a START label in your program.");
+    }
 }
 
 // Tokenizes a line
@@ -823,32 +826,38 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
     if (line_like("SLICE $text FROM $number COUNT $number IN $str-var", tokens, state))
     {
         // Set destination variable
-        TEXT* destination_var = ex_state.GetTextVariable(tokens[7]);
+        TEXT *destination_var = ex_state.GetTextVariable(tokens[7]);
         // Set text to slice
         TEXT text_constant = "";
-        TEXT* text_variable = NULL;
-        if(is_string(tokens[1]))
+        TEXT *text_variable = NULL;
+        if (is_string(tokens[1]))
         {
             text_constant = tokens[1];
-        }else{
+        }
+        else
+        {
             text_variable = ex_state.GetTextVariable(tokens[1]);
         }
         // Set from value
         NUMBER from_constant = 0;
-        NUMBER* from_variable = NULL;
-        if(is_number(tokens[3]))
+        NUMBER *from_variable = NULL;
+        if (is_number(tokens[3]))
         {
             from_constant = stod(tokens[3]);
-        }else{
+        }
+        else
+        {
             from_variable = ex_state.GetNumberVariable(tokens[3]);
         }
         // Set count value
         NUMBER count_constant = 0;
-        NUMBER* count_variable = NULL;
-        if(is_number(tokens[5]))
+        NUMBER *count_variable = NULL;
+        if (is_number(tokens[5]))
         {
             count_constant = stod(tokens[5]);
-        }else{
+        }
+        else
+        {
             count_variable = ex_state.GetNumberVariable(tokens[5]);
         }
         // Create executor
@@ -857,112 +866,31 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         return;
     }
 
-    if (line_like("SUB-PROCEDURE $name", tokens, state))
+    // +--------------+
+    // | CALL Command |
+    // +--------------+------------------------------------------------------------------------------------------------
+    if (line_like("CALL $name", tokens, state))
     {
-        string sub_id = tokens[1];
-        if (state.in_subprocedure())
+        string label_id = tokens[1];
+        if (!state.label_exists(label_id))
         {
-            error("Sub-procedure declared inside another sub-procedure.", current_file, line_num);
-        }
-        if (state.open_subprocedure(sub_id))
-        {
-            // TODO
+            error("Label not found '" + label_id + "'.", current_file, line_num);
         }
         else
         {
-            // Subprocedure already existed
-            error("Duplicate declaration for sub-procedure '" + sub_id + "'.", current_file, line_num);
+            CALL_Statement_Executor *executor = new CALL_Statement_Executor(ex_state.GetLabel(label_id));
+            ex_state.AddExecutor(executor);
         }
+        return;
     }
+
+    // +--------------+
+    // | RETURN Command |
+    // +--------------+------------------------------------------------------------------------------------------------
     if (line_like("RETURN", tokens, state))
     {
-        if (!state.in_subprocedure())
-        {
-            // Return found outside SUB-PROCEDURE
-            error("RETURN command found outside a sub-procedure.", current_file, line_num);
-        }
-        return;
-    }
-    if (line_like("END SUB-PROCEDURE", tokens, state))
-    {
-        if (!state.in_subprocedure())
-        {
-            // ENDSUB outside SUB
-            error("END SUB-PROCEDURE command found outside a sub-procedure.", current_file, line_num);
-        }
-        else
-        {
-            state.close_subprocedure();
-        }
-        return;
-    }
-    if (line_like("IF $condition THEN", tokens, state))
-    {
-        int if_num = state.add_if();
-        return;
-    }
-    if (line_like("ELSE", tokens, state))
-    {
-        // int ifNum = state.if_stack.top();
-        // state.if_stack.pop();
-        return;
-    }
-    if (line_like("END IF", tokens, state) || line_like("END-IF", tokens, state))
-    {
-        /*if (state.if_stack.size() == 0)
-        {
-            error("END IF without IF (" + current_file + ", line " + to_string(line_num) + ")");
-        }*/
-        /*// NVM
-        int ifNum = state.if_stack.top();
-        state.if_stack.pop();
-        // Si no tenía ELSE
-        if (state.if_stack.size() > 0 && state.if_stack.top() == ifNum)
-        {
-            state.if_stack.pop();
-            state.add_code("@else" + to_string(ifNum));
-        }
-        state.add_code("@endif" + to_string(ifNum));*/
-        return;
-    }
-
-    if (line_like("WHILE $condition DO", tokens, state))
-    {
-        int while_num = state.add_while();
-        return;
-    }
-    if (line_like("REPEAT", tokens, state))
-    {
-        /*if (state.while_stack.size() == 0)
-        {
-            error("REPEAT called without a preceding WHILE.", current_file, line_num);
-        }
-        int while_num = state.while_stack.top();
-        state.while_stack.pop();*/
-        return;
-    }
-    if (line_like("BREAK", tokens, state))
-    {
-        /*if (state.while_stack.size() == 0)
-        {
-            error("BREAK called outside a WHILE.", current_file, line_num);
-        }
-        int while_num = state.while_stack.top();*/
-        return;
-    }
-    if (line_like("CONTINUE", tokens, state))
-    {
-        /*if (state.while_stack.size() == 0)
-        {
-            error("CONTINUE called outside a WHILE.", current_file, line_num);
-        }
-        int while_num = state.while_stack.top();*/
-        return;
-    }
-
-    if (line_like("CALL SUB-PROCEDURE $subprocedure", tokens, state))
-    {
-        string sub_id = tokens[2];
+        RETURN_Statement_Executor *executor = new RETURN_Statement_Executor();
+        ex_state.AddExecutor(executor);
         return;
     }
     error("The line is malformed or contains some errors.", current_file, line_num);
@@ -1021,11 +949,6 @@ bool line_like(string model_line, vector<string> tokens, ldpl_compilation_state 
                 if (!is_string(tokens[i]) && !is_number(tokens[i]) && !state.variable_exists(tokens[i]) && tokens[i] != "CRLF")
                     return false;
             }
-        }
-        else if (model_tokens[i] == "$subprocedure") //$subprocedure is a SUB-PROCEDURE
-        {
-            if (!state.subprocedure_exists(tokens[i]))
-                return false;
         }
         else if (model_tokens[i] != tokens[i])
             return false;

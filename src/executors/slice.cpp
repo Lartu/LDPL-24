@@ -32,7 +32,7 @@ public:
         _destination_var = destination_var;
     }
 
-    void execute(size_t *program_counter) override
+    void execute(size_t *program_counter, LDPL_Execution_State *state) override
     {
         // Get pointer to the text to slice
         TEXT *text_to_slice = NULL;

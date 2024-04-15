@@ -8,6 +8,7 @@
 #include <locale>
 #include <cmath>
 #include <map>
+#include <cctype>
 
 // LDPL Imports
 #include "cpptrim.h"
@@ -50,3 +51,5 @@ void displayVersionInfo();
 #include "executors/join.cpp"
 #include "executors/get_length.cpp"
 #include "executors/slice.cpp"
+#include "executors/call.cpp"
+#include "executors/return.cpp"
