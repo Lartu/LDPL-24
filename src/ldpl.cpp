@@ -751,12 +751,46 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         return;
     }
 
+    // +--------------+
+    // | JOIN Command |
+    // +--------------+------------------------------------------------------------------------------------------------
     if (line_like("JOIN $text AND $text IN $str-var", tokens, state))
     {
         string dest_var_id = tokens[5];
+        string first_operand = tokens[1];
+        string second_operand = tokens[3];
+        TEXT *destination_var = ex_state.GetTextVariable(dest_var_id);
+        TEXT *first_var = NULL;
+        TEXT *second_var = NULL;
+        TEXT constant_value = "";
+        if (is_string(first_operand) && is_string(second_operand))
+        {
+            constant_value = prepare_string(first_operand) + prepare_string(second_operand);
+        }
+        else
+        {
+            if (is_string(first_operand))
+            {
+                constant_value = prepare_string(first_operand);
+            }
+            else
+            {
+                first_var = ex_state.GetTextVariable(first_operand);
+            }
+            if (is_string(second_operand))
+            {
+                constant_value = prepare_string(second_operand);
+            }
+            else
+            {
+                second_var = ex_state.GetTextVariable(second_operand);
+            }
+        }
+        JOIN_Statement_Executor *executor = new JOIN_Statement_Executor(first_var, second_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
         return;
     }
-    if (line_like("GET CHARACTER AT $number FROM $text IN $str-var", tokens, state))
+    if (line_like("SLICE $text FROM $number COUNT $number", tokens, state))
     {
         string dest_var_id = tokens[7];
         return;

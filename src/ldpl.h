@@ -1,3 +1,4 @@
+//STDLib Imports
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,6 +8,10 @@
 #include <locale>
 #include <cmath>
 #include <map>
+
+// LDPL Imports
+#include "cpptrim.h"
+#include "state.cpp"
 
 #ifndef VERSION
 #define VERSION 0
@@ -28,8 +33,7 @@ void load_and_compile(string &filename, ldpl_compilation_state &state);
 void replace_whitespace(string &code);
 void displayVersionInfo();
 
-#include "cpptrim.h"
-#include "state.cpp"
+// Executors
 #include "executors/add.cpp"
 #include "executors/subtract.cpp"
 #include "executors/divide.cpp"
@@ -43,3 +47,4 @@ void displayVersionInfo();
 #include "executors/floor.cpp"
 #include "executors/accept.cpp"
 #include "executors/store_text.cpp"
+#include "executors/join.cpp"
