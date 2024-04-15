@@ -48,3 +48,4 @@ void displayVersionInfo();
 #include "executors/accept.cpp"
 #include "executors/store_text.cpp"
 #include "executors/join.cpp"
+#include "executors/get_length.cpp"

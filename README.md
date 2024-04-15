@@ -21,8 +21,8 @@ These are features that were present when LDPL 1.1.2 ran on the NariVM. The curr
 - [X] `ABS ... IN ...`
 - [X] `CEIL ... IN ...`
 - [X] `FLOOR ... IN ...`
-- [ ] `JOIN ... AND ... IN ...`
-- [ ] `GET CHARACTER AT ... FROM ... IN ...`
+- [X] `JOIN ... AND ... IN ...`
+- [ ] `SLICE ... FROM ... COUNT ...`
 - [ ] `GET LENGTH OF ... IN ...`
 - [ ] `SUB-PROCEDURES`
 - [ ] `IF` blocks

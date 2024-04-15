@@ -790,16 +790,39 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         ex_state.AddExecutor(executor);
         return;
     }
+
+    // +--------------------+
+    // | GET LENGTH Command |
+    // +--------------------+------------------------------------------------------------------------------------------
+    if (line_like("GET LENGTH OF $text IN $num-var", tokens, state))
+    {
+        string dest_var_id = tokens[5];
+        string first_operand = tokens[3];
+        NUMBER *destination_var = NULL;
+        TEXT constant_value = "> ";
+        TEXT *first_operand_var = NULL;
+        // Get original string
+        if (is_string(first_operand))
+        {
+            constant_value = prepare_string(first_operand);
+        }
+        else
+        {
+            first_operand_var = ex_state.GetTextVariable(first_operand);
+        }
+        // Get destination variable
+        destination_var = ex_state.GetNumberVariable(dest_var_id);
+        GETLENGTH_Statement_Executor *executor = new GETLENGTH_Statement_Executor(first_operand_var, constant_value, destination_var);
+        ex_state.AddExecutor(executor);
+        return;
+    }
+
     if (line_like("SLICE $text FROM $number COUNT $number", tokens, state))
     {
         string dest_var_id = tokens[7];
         return;
     }
-    if (line_like("GET LENGTH OF $text IN $str-var", tokens, state))
-    {
-        string dest_var_id = tokens[5];
-        return;
-    }
+
     if (line_like("SUB-PROCEDURE $name", tokens, state))
     {
         string sub_id = tokens[1];
