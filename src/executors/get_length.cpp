@@ -9,7 +9,7 @@ private:
     unsigned int type = 0;
 
 public:
-    GETLENGTH_Statement_Executor(TEXT *operand_1, TEXT constant, NUMBER *destination)
+    GETLENGTH_Statement_Executor(TEXT *operand_1, TEXT &constant, NUMBER *destination)
     {
         _constant = constant;
         _operand_1 = operand_1;

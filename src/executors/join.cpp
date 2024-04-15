@@ -10,7 +10,7 @@ private:
     unsigned int type = 0;
 
 public:
-    JOIN_Statement_Executor(TEXT *operand_1, TEXT *operand_2, TEXT constant, TEXT *destination)
+    JOIN_Statement_Executor(TEXT *operand_1, TEXT *operand_2, TEXT &constant, TEXT *destination)
     {
         _constant = constant;
         _operand_1 = operand_1;

@@ -817,9 +817,43 @@ void compile_line(vector<string> &tokens, unsigned int line_num, ldpl_compilatio
         return;
     }
 
-    if (line_like("SLICE $text FROM $number COUNT $number", tokens, state))
+    // +---------------+
+    // | SLICE Command |
+    // +---------------+-----------------------------------------------------------------------------------------------
+    if (line_like("SLICE $text FROM $number COUNT $number IN $str-var", tokens, state))
     {
-        string dest_var_id = tokens[7];
+        // Set destination variable
+        TEXT* destination_var = ex_state.GetTextVariable(tokens[7]);
+        // Set text to slice
+        TEXT text_constant = "";
+        TEXT* text_variable = NULL;
+        if(is_string(tokens[1]))
+        {
+            text_constant = tokens[1];
+        }else{
+            text_variable = ex_state.GetTextVariable(tokens[1]);
+        }
+        // Set from value
+        NUMBER from_constant = 0;
+        NUMBER* from_variable = NULL;
+        if(is_number(tokens[3]))
+        {
+            from_constant = stod(tokens[3]);
+        }else{
+            from_variable = ex_state.GetNumberVariable(tokens[3]);
+        }
+        // Set count value
+        NUMBER count_constant = 0;
+        NUMBER* count_variable = NULL;
+        if(is_number(tokens[5]))
+        {
+            count_constant = stod(tokens[5]);
+        }else{
+            count_variable = ex_state.GetNumberVariable(tokens[5]);
+        }
+        // Create executor
+        SLICE_Statement_Executor *executor = new SLICE_Statement_Executor(text_variable, text_constant, from_variable, from_constant, count_variable, count_constant, destination_var);
+        ex_state.AddExecutor(executor);
         return;
     }
 

@@ -49,3 +49,4 @@ void displayVersionInfo();
 #include "executors/store_text.cpp"
 #include "executors/join.cpp"
 #include "executors/get_length.cpp"
+#include "executors/slice.cpp"

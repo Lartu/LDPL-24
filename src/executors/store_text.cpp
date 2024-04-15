@@ -9,7 +9,7 @@ private:
     unsigned int type = 0;
 
 public:
-    STORE_TEXT_Statement_Executor(TEXT *operand_1, TEXT constant, TEXT *destination)
+    STORE_TEXT_Statement_Executor(TEXT *operand_1, TEXT &constant, TEXT *destination)
     {
         _constant = constant;
         _operand_1 = operand_1;
