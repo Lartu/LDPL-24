@@ -1,10 +1,8 @@
-mynumber IS NUMBER
-myprompt IS TEXT
+label sayno
+    display "NOOO!!!" crlf
+return
 
-STORE "Enter a number to abs: " IN myprompt
-DISPLAY "Prompt to display: '" myprompt "'" CRLF
-
-ACCEPT myprompt IN mynumber
-DISPLAY "Without absing: " mynumber CRLF
-ABS mynumber in mynumber
-DISPLAY "Absed:          " mynumber CRLF
+label start
+display "Hola!" crlf
+call sayno
+display "Bye!" crlf
